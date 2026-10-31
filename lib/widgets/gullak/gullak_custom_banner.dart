@@ -61,7 +61,7 @@ class GullakCustomGoalCard extends StatelessWidget {
                   ),
                   const SizedBox(height: 1),
                   const Text(
-                    'Custom Gullak',
+                    'Custom Goal',
                     style: TextStyle(
                       fontSize: 19,
                       fontWeight: FontWeight.w800,

@@ -29,7 +29,7 @@ class GullakBottomNav extends StatelessWidget {
         } else {
           Navigator.of(context).pushReplacement(
             PageRouteBuilder(
-              pageBuilder: (_, __, ___) => const HomeScreen(),
+              pageBuilder: (context, animation, secondaryAnimation) => const HomeScreen(),
               transitionDuration: Duration.zero,
             ),
           );
@@ -44,7 +44,7 @@ class GullakBottomNav extends StatelessWidget {
         } else {
           Navigator.of(context).pushReplacement(
             PageRouteBuilder(
-              pageBuilder: (_, __, ___) => const GullaksScreen(),
+              pageBuilder: (context, animation, secondaryAnimation) => const GullaksScreen(),
               transitionDuration: Duration.zero,
             ),
           );
@@ -59,7 +59,7 @@ class GullakBottomNav extends StatelessWidget {
         } else {
           Navigator.of(context).pushReplacement(
             PageRouteBuilder(
-              pageBuilder: (_, __, ___) => const PortfolioScreen(),
+              pageBuilder: (context, animation, secondaryAnimation) => const PortfolioScreen(),
               transitionDuration: Duration.zero,
             ),
           );
@@ -79,7 +79,7 @@ class GullakBottomNav extends StatelessWidget {
         } else {
           Navigator.of(context).pushReplacement(
             PageRouteBuilder(
-              pageBuilder: (_, __, ___) => const ProfileScreen(
+              pageBuilder: (context, animation, secondaryAnimation) => const ProfileScreen(
                 userName: 'Prince Kumar',
                 phoneNumber: '+91 98765 43210',
               ),
@@ -122,31 +122,27 @@ class GullakBottomNav extends StatelessWidget {
             context: context,
             index: 0,
             label: 'Home',
-            icon: selectedIndex == 0 ? Icons.home_rounded : Icons.home_outlined,
+            icon: Icons.home_rounded,
             onTap: () => _onTapTab(context, 0),
           ),
           _buildGullakItem(
             context: context,
             index: 1,
-            label: 'Gullaks',
+            label: 'Goals',
             onTap: () => _onTapTab(context, 1),
           ),
           _buildItem(
             context: context,
             index: 2,
             label: 'Dashboard',
-            icon: selectedIndex == 2
-                ? Icons.pie_chart_rounded
-                : Icons.pie_chart_outline_rounded,
+            icon: Icons.bar_chart_rounded,
             onTap: () => _onTapTab(context, 2),
           ),
           _buildItem(
             context: context,
             index: 3,
             label: 'Profile',
-            icon: selectedIndex == 3
-                ? Icons.person_rounded
-                : Icons.person_outline_rounded,
+            icon: Icons.person_outline_rounded,
             onTap: () => _onTapTab(context, 3),
           ),
         ],
@@ -162,18 +158,25 @@ class GullakBottomNav extends StatelessWidget {
     required VoidCallback onTap,
   }) {
     final isSelected = selectedIndex == index;
-    final color = isSelected ? const Color(0xFF00897B) : const Color(0xFF94A3B8);
+    final color = isSelected ? const Color(0xFF00796B) : const Color(0xFF64748B);
 
     return InkWell(
       onTap: onTap,
-      borderRadius: BorderRadius.circular(12),
+      borderRadius: BorderRadius.circular(16),
       child: SizedBox(
         width: 72,
         child: Column(
           mainAxisSize: MainAxisSize.min,
           children: [
-            Icon(icon, size: 23, color: color),
-            const SizedBox(height: 3),
+            Container(
+              padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 3.5),
+              decoration: BoxDecoration(
+                color: isSelected ? const Color(0xFFE6F4F1) : Colors.transparent,
+                borderRadius: BorderRadius.circular(16),
+              ),
+              child: Icon(icon, size: 22, color: color),
+            ),
+            const SizedBox(height: 2),
             Text(
               label,
               style: TextStyle(
@@ -195,24 +198,34 @@ class GullakBottomNav extends StatelessWidget {
     required VoidCallback onTap,
   }) {
     final isSelected = selectedIndex == index;
-    final color = isSelected ? const Color(0xFF00897B) : const Color(0xFF94A3B8);
+    final color = isSelected ? const Color(0xFF00796B) : const Color(0xFF64748B);
 
     return InkWell(
       onTap: onTap,
-      borderRadius: BorderRadius.circular(12),
+      borderRadius: BorderRadius.circular(16),
       child: SizedBox(
         width: 72,
         child: Column(
           mainAxisSize: MainAxisSize.min,
           children: [
-            SizedBox(
-              width: 24,
-              height: 24,
-              child: CustomPaint(
-                painter: GullakPotIconPainter(color: color, isFilled: isSelected),
+            Container(
+              padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 3.5),
+              decoration: BoxDecoration(
+                color: isSelected ? const Color(0xFFE6F4F1) : Colors.transparent,
+                borderRadius: BorderRadius.circular(16),
+              ),
+              child: SizedBox(
+                width: 22,
+                height: 22,
+                child: CustomPaint(
+                  painter: GullakPotIconPainter(
+                    color: color,
+                    isFilled: isSelected,
+                  ),
+                ),
               ),
             ),
-            const SizedBox(height: 3),
+            const SizedBox(height: 2),
             Text(
               label,
               style: TextStyle(

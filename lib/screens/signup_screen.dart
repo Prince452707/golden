@@ -46,131 +46,14 @@ class _SignupScreenState extends State<SignupScreen> {
   }
 
   void _onVerificationSuccess() {
-    final TextEditingController nameController =
-        TextEditingController(text: 'Prince');
-
-    showDialog(
-      context: context,
-      barrierDismissible: false,
-      builder: (dialogContext) {
-        return AlertDialog(
-          shape: RoundedRectangleBorder(
-            borderRadius: BorderRadius.circular(24),
-          ),
-          contentPadding: const EdgeInsets.fromLTRB(22, 24, 22, 20),
-          content: Column(
-            mainAxisSize: MainAxisSize.min,
-            children: [
-              Container(
-                width: 64,
-                height: 64,
-                decoration: BoxDecoration(
-                  color: const Color(0xFF00AAA1).withValues(alpha: 0.12),
-                  shape: BoxShape.circle,
-                ),
-                child: const Icon(
-                  Icons.check_circle_rounded,
-                  color: Color(0xFF00AAA1),
-                  size: 42,
-                ),
-              ),
-              const SizedBox(height: 16),
-              const Text(
-                'Verification Successful',
-                style: TextStyle(
-                  fontSize: 20,
-                  fontWeight: FontWeight.w800,
-                  color: Color(0xFF0F172A),
-                  letterSpacing: -0.3,
-                ),
-                textAlign: TextAlign.center,
-              ),
-              const SizedBox(height: 6),
-              Text(
-                'Account verified for $_selectedCountryCode $_enteredPhone',
-                style: const TextStyle(
-                  fontSize: 13,
-                  color: Color(0xFF64748B),
-                ),
-                textAlign: TextAlign.center,
-              ),
-              const SizedBox(height: 18),
-              // Name personalization input
-              Container(
-                decoration: BoxDecoration(
-                  color: const Color(0xFFF8FAFC),
-                  borderRadius: BorderRadius.circular(12),
-                  border: Border.all(color: const Color(0xFFE2E8F0)),
-                ),
-                padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 2),
-                child: TextField(
-                  controller: nameController,
-                  decoration: const InputDecoration(
-                    icon: Icon(
-                      Icons.person_outline_rounded,
-                      size: 20,
-                      color: Color(0xFF00AAA1),
-                    ),
-                    hintText: 'Enter your name',
-                    border: InputBorder.none,
-                    isDense: true,
-                    contentPadding: EdgeInsets.symmetric(vertical: 10),
-                  ),
-                  style: const TextStyle(
-                    fontSize: 14.5,
-                    fontWeight: FontWeight.w600,
-                    color: Color(0xFF0F172A),
-                  ),
-                ),
-              ),
-              const SizedBox(height: 20),
-              SizedBox(
-                width: double.infinity,
-                height: 48,
-                child: ElevatedButton(
-                  onPressed: () {
-                    final userName = nameController.text.trim().isNotEmpty
-                        ? nameController.text.trim()
-                        : 'Prince';
-                    Navigator.pop(dialogContext);
-                    Navigator.pushReplacement(
-                      context,
-                      MaterialPageRoute(
-                        builder: (_) => HomeScreen(
-                          userName: userName,
-                          phoneNumber: '$_selectedCountryCode $_enteredPhone',
-                        ),
-                      ),
-                    );
-                  },
-                  style: ElevatedButton.styleFrom(
-                    backgroundColor: const Color(0xFF00AAA1),
-                    foregroundColor: Colors.white,
-                    shape: RoundedRectangleBorder(
-                      borderRadius: BorderRadius.circular(24),
-                    ),
-                    elevation: 2,
-                  ),
-                  child: const Row(
-                    mainAxisAlignment: MainAxisAlignment.center,
-                    children: [
-                      Text(
-                        'Get Started',
-                        style: TextStyle(
-                          fontSize: 15.5,
-                          fontWeight: FontWeight.w700,
-                        ),
-                      ),
-                      SizedBox(width: 6),
-                      Icon(Icons.arrow_forward_rounded, size: 18),
-                    ],
-                  ),
-                ),
-              ),
-            ],
-          ),
-        );
-      },
+    Navigator.pushReplacement(
+      context,
+      MaterialPageRoute(
+        builder: (_) => HomeScreen(
+          userName: 'Prince Kumar',
+          phoneNumber: '$_selectedCountryCode $_enteredPhone',
+        ),
+      ),
     );
   }
 

@@ -389,7 +389,7 @@ class _GullakSetupModalState extends State<GullakSetupModal> {
                   const Icon(Icons.lock_rounded, size: 16, color: Color(0xFFFDE68A)),
                   const SizedBox(width: 8),
                   Text(
-                    'Proceed to Pay ₹${_initialDeposit.toInt()} & Start Gullak',
+                    'Proceed to Pay ₹${_initialDeposit.toInt()} & Start Goal',
                     style: const TextStyle(
                       fontSize: 15.5,
                       fontWeight: FontWeight.w700,

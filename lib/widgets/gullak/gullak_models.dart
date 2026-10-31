@@ -95,7 +95,7 @@ class GullakGoal {
     GullakGoal(
       id: 'custom',
       prefix: 'Custom',
-      title: 'Gullak',
+      title: 'Goal',
       cleanImageAsset: 'assets/clean_custom.png',
       titleColor: Color(0xFF7C2D12),
       gradientColors: [Color(0xFFFFF7ED), Color(0xFFFFEDD5)],

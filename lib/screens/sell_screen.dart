@@ -16,7 +16,7 @@ class SellScreen extends StatefulWidget {
 
 class _SellScreenState extends State<SellScreen> {
   late bool _isGoldSelected;
-  bool _isQuantityMode = true; // true = Quantity (gm), false = Amount (₹)
+  final bool _isQuantityMode = true; // true = Quantity (gm), false = Amount (₹)
   double _grams = 0.5000;
   final TextEditingController _inputController = TextEditingController(text: '0.5000');
 

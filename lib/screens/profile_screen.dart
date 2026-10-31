@@ -1,5 +1,4 @@
 import 'package:flutter/material.dart';
-import '../widgets/gold_3d_widgets.dart';
 import '../widgets/gullak/gullak_bottom_nav.dart';
 import 'signup_screen.dart';
 

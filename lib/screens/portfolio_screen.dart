@@ -62,7 +62,7 @@ class _PortfolioScreenState extends State<PortfolioScreen> {
   final List<Map<String, dynamic>> _goldGoalAllocations = [
     {
       'title': 'Daily Saving',
-      'subtitle': 'Daily Auto-Save Gullak',
+      'subtitle': 'Daily Auto-Save Goal',
       'grams': 0.3000,
       'targetAmount': 10000.0,
       'savedAmount': 4311.06,
@@ -818,7 +818,7 @@ class _PortfolioScreenState extends State<PortfolioScreen> {
                 ),
                 const SizedBox(height: 2),
                 Text(
-                  'Allocated across your ${_isGoldSelected ? "Gullaks" : "Silver Goals"}',
+                  'Allocated across your ${_isGoldSelected ? "Gold Goals" : "Silver Goals"}',
                   style: const TextStyle(
                     fontSize: 12,
                     fontWeight: FontWeight.w500,
@@ -828,7 +828,7 @@ class _PortfolioScreenState extends State<PortfolioScreen> {
               ],
             ),
 
-            // "View Gullaks" shortcut
+            // "View Goals" shortcut
             InkWell(
               onTap: () {
                 Navigator.of(context).push(
@@ -844,7 +844,7 @@ class _PortfolioScreenState extends State<PortfolioScreen> {
                 child: Row(
                   children: const [
                     Text(
-                      'All Gullaks',
+                      'All Goals',
                       style: TextStyle(
                         fontSize: 11.5,
                         fontWeight: FontWeight.w700,
@@ -867,7 +867,7 @@ class _PortfolioScreenState extends State<PortfolioScreen> {
           shrinkWrap: true,
           physics: const NeverScrollableScrollPhysics(),
           itemCount: allocations.length,
-          separatorBuilder: (_, __) => const SizedBox(height: 12),
+          separatorBuilder: (context, index) => const SizedBox(height: 12),
           itemBuilder: (context, index) {
             final item = allocations[index];
             final grams = item['grams'] as double;
@@ -1107,7 +1107,7 @@ class _PortfolioScreenState extends State<PortfolioScreen> {
                 Icon(Icons.add_rounded, size: 18, color: Color(0xFF00897B)),
                 SizedBox(width: 6),
                 Text(
-                  'Set up a new Gullak Goal',
+                  'Set up a new Goal',
                   style: TextStyle(
                     fontSize: 13,
                     fontWeight: FontWeight.w700,

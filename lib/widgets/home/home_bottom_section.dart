@@ -1,11 +1,6 @@
 import 'package:flutter/material.dart';
 import '../../screens/buy_screen.dart';
-import '../../screens/portfolio_screen.dart';
-import '../../screens/transactions_screen.dart';
-import '../../screens/gullaks_screen.dart';
-import '../../screens/profile_screen.dart';
 import '../gullak/gullak_bottom_nav.dart';
-import '../gullak/gullak_painters.dart';
 import 'home_bottom_painters.dart';
 
 class HomeWhiteBottomSection extends StatelessWidget {

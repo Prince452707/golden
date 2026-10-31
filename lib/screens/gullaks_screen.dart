@@ -59,9 +59,9 @@ class _GullaksScreenState extends State<GullaksScreen> {
                         children: [
                           const SizedBox(height: 18),
 
-                          // 1. "Set up a new Gullak" + "View all ->"
+                          // 1. "Set up a new Goal" + "View all ->"
                           _buildSectionHeader(
-                            title: 'Set up a new Gullak',
+                            title: 'Set up a new Goal',
                             onViewAll: () => _navigateToAllGoals(context),
                           ),
                           const SizedBox(height: 12),
@@ -92,9 +92,9 @@ class _GullaksScreenState extends State<GullaksScreen> {
 
                           const SizedBox(height: 24),
 
-                          // 2. "Your Gullaks" + "View all ->"
+                          // 2. "Your Goals" + "View all ->"
                           _buildSectionHeader(
-                            title: 'Your Gullaks',
+                            title: 'Your Goals',
                             onViewAll: () => _navigateToAllGoals(context),
                           ),
                           const SizedBox(height: 12),
@@ -220,7 +220,7 @@ class _GullaksScreenState extends State<GullaksScreen> {
                             crossAxisAlignment: CrossAxisAlignment.start,
                             children: [
                               const Text(
-                                'Gullaks',
+                                'Goals',
                                 style: TextStyle(
                                   fontSize: 32,
                                   fontWeight: FontWeight.w900,
@@ -426,7 +426,7 @@ class _GullaksScreenState extends State<GullaksScreen> {
           onTap: () {
             ScaffoldMessenger.of(context).showSnackBar(
               const SnackBar(
-                content: Text('Gullak Support: 24/7 Dedicated Gold Advisor online'),
+                content: Text('Goal Support: 24/7 Dedicated Gold Advisor online'),
                 duration: Duration(seconds: 1),
               ),
             );

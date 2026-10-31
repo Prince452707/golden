@@ -31,7 +31,7 @@ class _ScreenShowcaseShellState extends State<ScreenShowcaseShell> {
     '6. Transactions',
     '7. Price History',
     '8. Profile',
-    '9. Gullaks (Section)',
+    '9. Goals (Section)',
     '10. What\'s your goal? (Goals)',
   ];
 
@@ -222,7 +222,7 @@ class _ScreenShowcaseShellState extends State<ScreenShowcaseShell> {
               scrollDirection: Axis.horizontal,
               physics: const BouncingScrollPhysics(),
               itemCount: _screenTitles.length,
-              separatorBuilder: (_, __) => const SizedBox(width: 6),
+              separatorBuilder: (context, index) => const SizedBox(width: 6),
               itemBuilder: (context, index) {
                 final isSelected = index == _activeScreenIndex;
                 return GestureDetector(

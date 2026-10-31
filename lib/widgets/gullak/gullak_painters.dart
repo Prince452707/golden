@@ -1,4 +1,3 @@
-import 'dart:math' as math;
 import 'package:flutter/material.dart';
 
 /// Decorative golden sunburst rays and ambient sparkle for the Gullak header

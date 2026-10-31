@@ -235,7 +235,7 @@ class GullakGoalsScreen extends StatelessWidget {
           onTap: () {
             ScaffoldMessenger.of(context).showSnackBar(
               const SnackBar(
-                content: Text('Gullak Support: 24/7 Dedicated Gold Advisor online'),
+                content: Text('Goal Support: 24/7 Dedicated Gold Advisor online'),
                 duration: Duration(seconds: 1),
               ),
             );

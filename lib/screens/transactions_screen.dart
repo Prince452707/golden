@@ -1,5 +1,4 @@
 import 'package:flutter/material.dart';
-import '../widgets/gold_3d_widgets.dart';
 
 class TransactionsScreen extends StatefulWidget {
   const TransactionsScreen({super.key});
@@ -125,7 +124,7 @@ class _TransactionsScreenState extends State<TransactionsScreen> {
                 scrollDirection: Axis.horizontal,
                 padding: const EdgeInsets.symmetric(horizontal: 16),
                 itemCount: _filters.length,
-                separatorBuilder: (_, __) => const SizedBox(width: 8),
+                separatorBuilder: (context, index) => const SizedBox(width: 8),
                 itemBuilder: (context, index) {
                   final filter = _filters[index];
                   final isSelected = filter == _selectedFilter;
@@ -169,7 +168,7 @@ class _TransactionsScreenState extends State<TransactionsScreen> {
                 physics: const BouncingScrollPhysics(),
                 padding: const EdgeInsets.fromLTRB(16, 8, 16, 24),
                 itemCount: filteredList.length,
-                separatorBuilder: (_, __) => const Divider(height: 18, color: Color(0xFFF1F5F9)),
+                separatorBuilder: (context, index) => const Divider(height: 18, color: Color(0xFFF1F5F9)),
                 itemBuilder: (context, index) {
                   final item = filteredList[index];
                   return _buildTransactionItemRow(item);

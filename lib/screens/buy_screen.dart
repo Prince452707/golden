@@ -21,7 +21,6 @@ class BuyScreen extends StatefulWidget {
 
 class _BuyScreenState extends State<BuyScreen> {
   late bool _isGoldSelected;
-  bool _isAmountMode = true; // true = Amount (₹), false = Quantity (gm)
   late double _amount;
   late final TextEditingController _amountController;
 
@@ -325,7 +324,7 @@ class _BuyScreenState extends State<BuyScreen> {
                 ),
                 const SizedBox(height: 1),
                 Text(
-                  '${widget.goalName} Gullak',
+                  '${widget.goalName} Goal',
                   style: const TextStyle(
                     fontSize: 14,
                     fontWeight: FontWeight.w800,

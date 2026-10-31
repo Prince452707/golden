@@ -10,7 +10,7 @@ class WhyGullakSection extends StatelessWidget {
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
         const Text(
-          'Why Gullak?',
+          'Why Goals?',
           style: TextStyle(
             fontSize: 18,
             fontWeight: FontWeight.w800,

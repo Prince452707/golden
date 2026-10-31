@@ -1,11 +1,10 @@
 import 'package:flutter/material.dart';
-import '../screens/home_screen.dart';
 import '../screens/portfolio_screen.dart';
 import 'gold_3d_widgets.dart';
 
 class TransactionSuccessDialog extends StatelessWidget {
-  final bool isBuy; // true = Buy, false = Sell
-  final bool isGold; // true = Gold, false = Silver
+  final bool isBuy; 
+  final bool isGold; 
   final double grams;
   final double amount;
   final double ratePerGram;
