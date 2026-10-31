@@ -84,9 +84,9 @@ class _HeroVideoWidgetState extends State<HeroVideoWidget> {
       );
     }
 
-    // High quality asset fallback full width with clean box fit
+    // Clean asset fallback full width with clean box fit
     return Image.asset(
-      'assets/gold_hero.png',
+      'assets/home_podium_feathered.png',
       fit: widget.fit,
       alignment: widget.alignment,
       width: double.infinity,

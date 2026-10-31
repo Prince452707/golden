@@ -7,7 +7,6 @@ class OtpVerificationView extends StatefulWidget {
   final String countryCode;
   final VoidCallback onEditNumber;
   final VoidCallback onVerificationSuccess;
-
   const OtpVerificationView({
     super.key,
     required this.phoneNumber,

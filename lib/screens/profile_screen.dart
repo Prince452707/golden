@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import '../widgets/gullak/gullak_bottom_nav.dart';
 import 'signup_screen.dart';
+import 'gift_bullion_screen.dart';
 
 class ProfileScreen extends StatelessWidget {
   final String userName;
@@ -251,6 +252,31 @@ class ProfileScreen extends StatelessWidget {
             onTap: () {
               ScaffoldMessenger.of(context).showSnackBar(
                 const SnackBar(content: Text('KYC Status: Fully Verified with PAN & Aadhaar')),
+              );
+            },
+          ),
+          const Divider(height: 1, indent: 52, color: Color(0xFFF1F5F9)),
+          _buildMenuItem(
+            icon: Icons.card_giftcard_rounded,
+            label: 'Gift Gold & Silver',
+            badge: Container(
+              padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
+              decoration: BoxDecoration(
+                color: const Color(0xFFFEF3C7),
+                borderRadius: BorderRadius.circular(8),
+              ),
+              child: const Text(
+                'Send 24K',
+                style: TextStyle(
+                  fontSize: 11,
+                  fontWeight: FontWeight.w700,
+                  color: Color(0xFFB45309),
+                ),
+              ),
+            ),
+            onTap: () {
+              Navigator.of(context).push(
+                MaterialPageRoute(builder: (_) => const GiftBullionScreen()),
               );
             },
           ),

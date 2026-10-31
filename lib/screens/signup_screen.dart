@@ -44,7 +44,6 @@ class _SignupScreenState extends State<SignupScreen> {
       ),
     );
   }
-
   void _onVerificationSuccess() {
     Navigator.pushReplacement(
       context,

@@ -4,9 +4,10 @@ import 'live_rates_screen.dart';
 import 'profile_screen.dart';
 import 'buy_screen.dart';
 import 'portfolio_screen.dart';
-import 'transactions_screen.dart';
 import '../widgets/home/home_arch_painters.dart';
 import '../widgets/home/home_bottom_section.dart';
+import 'discover_screen.dart';
+import 'gift_bullion_screen.dart';
 
 class HomeScreen extends StatefulWidget {
   final String userName;
@@ -42,19 +43,20 @@ class _HomeScreenState extends State<HomeScreen> {
         systemNavigationBarDividerColor: Colors.transparent,
       ),
       child: Scaffold(
-        backgroundColor: Colors.white,
+        backgroundColor: const Color(0xFFFEDE77),
         body: Column(
           children: [
             Expanded(
               child: SingleChildScrollView(
-                physics: const BouncingScrollPhysics(),
+                physics: const ClampingScrollPhysics(),
                 child: Column(
                   children: [
                     // Top Radiant Golden Hero Header
                     _buildTopHeroSection(context),
 
                     // Main Body on Crisp White Canvas
-                    Padding(
+                    Container(
+                      color: Colors.white,
                       padding: const EdgeInsets.symmetric(horizontal: 16),
                       child: Column(
                         crossAxisAlignment: CrossAxisAlignment.start,
@@ -66,18 +68,18 @@ class _HomeScreenState extends State<HomeScreen> {
 
                           const SizedBox(height: 16),
 
-                          // 2. Live Gold Price with Golden Wave Trend Chart
-                          _buildLiveGoldPriceCard(context),
-
-                          const SizedBox(height: 16),
-
-                          // 3. "Lowest Gold Price in Last 6 Months" Banner
+                          // 2. "Track Price Trends & Save at the Right Time" Banner
                           _buildLowestPriceBanner(context),
 
                           const SizedBox(height: 20),
 
-                          // 4. Recent Activity Section
-                          _buildRecentActivitySection(context),
+                          // 3. "Discover & Learn" Horizontal Scroll Section
+                          _buildDiscoverAndLearnSection(context),
+
+                          const SizedBox(height: 20),
+
+                          // 4. Gift Gold & Silver Festive Card
+                          _buildGiftBullionBanner(context),
 
                           const SizedBox(height: 24),
                         ],
@@ -144,7 +146,7 @@ class _HomeScreenState extends State<HomeScreen> {
   Widget _buildTopBar(BuildContext context) {
     return Row(
       children: [
-        // User Avatar Circle "PK"
+       
         InkWell(
           onTap: () {
             Navigator.of(context).push(
@@ -242,11 +244,8 @@ class _HomeScreenState extends State<HomeScreen> {
         // 3D Purple Gift Box Circle Button
         InkWell(
           onTap: () {
-            ScaffoldMessenger.of(context).showSnackBar(
-              const SnackBar(
-                content: Text('🎁 Rewards & Gifts: Scratch cards active!'),
-                duration: Duration(seconds: 1),
-              ),
+            Navigator.of(context).push(
+              MaterialPageRoute(builder: (_) => const GiftBullionScreen()),
             );
           },
           borderRadius: BorderRadius.circular(20),
@@ -320,14 +319,14 @@ class _HomeScreenState extends State<HomeScreen> {
       height: 154,
       child: Stack(
         children: [
-          // Left: Total Savings, ₹101, Gold Balance Badge, View Details Link
+          // Left: Total Savings, ₹101, Gold Balance Badge
           Positioned(
             left: 0,
             top: 4,
             bottom: 4,
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
-              mainAxisAlignment: MainAxisAlignment.spaceBetween,
+              mainAxisAlignment: MainAxisAlignment.center,
               children: [
                 Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
@@ -353,6 +352,8 @@ class _HomeScreenState extends State<HomeScreen> {
                     ),
                   ],
                 ),
+
+                const SizedBox(height: 10),
 
                 // Gold Balance Pill
                 InkWell(
@@ -395,39 +396,6 @@ class _HomeScreenState extends State<HomeScreen> {
                           Icons.chevron_right_rounded,
                           size: 16,
                           color: Color(0xFF0F172A),
-                        ),
-                      ],
-                    ),
-                  ),
-                ),
-
-                // View Details Link
-                InkWell(
-                  onTap: () {
-                    Navigator.of(context).push(
-                      MaterialPageRoute(builder: (_) => const PortfolioScreen()),
-                    );
-                  },
-                  borderRadius: BorderRadius.circular(4),
-                  child: Padding(
-                    padding: const EdgeInsets.symmetric(vertical: 2),
-                    child: Row(
-                      mainAxisSize: MainAxisSize.min,
-                      children: const [
-                        Text(
-                          'View details',
-                          style: TextStyle(
-                            fontSize: 13,
-                            fontWeight: FontWeight.w700,
-                            color: Color(0xFF005953),
-                            letterSpacing: -0.1,
-                          ),
-                        ),
-                        SizedBox(width: 4),
-                        Icon(
-                          Icons.arrow_forward_rounded,
-                          size: 14,
-                          color: Color(0xFF005953),
                         ),
                       ],
                     ),
@@ -709,150 +677,128 @@ class _HomeScreenState extends State<HomeScreen> {
     );
   }
 
-  /// Live Gold Price Card with Realtime Golden Wave Curve
-  Widget _buildLiveGoldPriceCard(BuildContext context) {
-    return Container(
-      width: double.infinity,
-      decoration: BoxDecoration(
-        color: Colors.white,
-        borderRadius: BorderRadius.circular(20),
-        border: Border.all(
-          color: const Color(0xFFF1F5F9),
-          width: 1.2,
-        ),
-        boxShadow: [
-          BoxShadow(
-            color: Colors.black.withValues(alpha: 0.03),
-            blurRadius: 10,
-            offset: const Offset(0, 4),
+  /// Festive "Gift Gold & Silver" Banner Card
+  Widget _buildGiftBullionBanner(BuildContext context) {
+    return InkWell(
+      onTap: () {
+        Navigator.of(context).push(
+          MaterialPageRoute(
+            builder: (_) => const GiftBullionScreen(),
           ),
-        ],
-      ),
-      padding: const EdgeInsets.all(16),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          // Header Row: Live Gold Price • Live from market | View chart ->
-          Row(
-            mainAxisAlignment: MainAxisAlignment.spaceBetween,
-            children: [
-              Row(
-                children: [
-                  const Text(
-                    'Live Gold Price',
+        );
+      },
+      borderRadius: BorderRadius.circular(18),
+      child: Container(
+        width: double.infinity,
+        decoration: BoxDecoration(
+          gradient: const LinearGradient(
+            begin: Alignment.topLeft,
+            end: Alignment.bottomRight,
+            colors: [
+              Color(0xFFFFFBEB),
+              Color(0xFFFEF3C7),
+            ],
+          ),
+          borderRadius: BorderRadius.circular(18),
+          border: Border.all(
+            color: const Color(0xFFFDE68A),
+            width: 1.0,
+          ),
+          boxShadow: [
+            BoxShadow(
+              color: const Color(0xFFD97706).withValues(alpha: 0.04),
+              blurRadius: 8,
+              offset: const Offset(0, 3),
+            ),
+          ],
+        ),
+        padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
+        child: Row(
+          children: [
+            // 3D Gift Box Graphic
+            SizedBox(
+              width: 44,
+              height: 44,
+              child: Image.asset(
+                'assets/clean_gift.png',
+                fit: BoxFit.contain,
+              ),
+            ),
+
+            const SizedBox(width: 12),
+
+            // Middle Text
+            Expanded(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: const [
+                  Text(
+                    'GIFT 24K BULLION 🎁',
+                    style: TextStyle(
+                      fontSize: 10,
+                      fontWeight: FontWeight.w800,
+                      color: Color(0xFFB45309),
+                      letterSpacing: 0.5,
+                    ),
+                  ),
+                  SizedBox(height: 2),
+                  Text(
+                    'Gift Gold & Silver to Someone',
                     style: TextStyle(
                       fontSize: 14,
                       fontWeight: FontWeight.w800,
                       color: Color(0xFF0F172A),
                     ),
                   ),
-                  const SizedBox(width: 6),
-                  Container(
-                    width: 6,
-                    height: 6,
-                    decoration: const BoxDecoration(
-                      color: Color(0xFF10B981),
-                      shape: BoxShape.circle,
-                    ),
-                  ),
-                  const SizedBox(width: 5),
-                  const Text(
-                    'Live from market',
+                  SizedBox(height: 1),
+                  Text(
+                    'Delivered instantly with a personalized card',
                     style: TextStyle(
-                      fontSize: 11,
+                      fontSize: 10.5,
                       fontWeight: FontWeight.w500,
                       color: Color(0xFF64748B),
                     ),
                   ),
                 ],
               ),
+            ),
 
-              InkWell(
-                onTap: () {
-                  Navigator.of(context).push(
-                    MaterialPageRoute(builder: (_) => const LiveRatesScreen()),
-                  );
-                },
-                child: Row(
-                  children: const [
-                    Text(
-                      'View chart',
-                      style: TextStyle(
-                        fontSize: 12.5,
-                        fontWeight: FontWeight.w700,
-                        color: Color(0xFF00796B),
-                      ),
-                    ),
-                    SizedBox(width: 3),
-                    Icon(
-                      Icons.arrow_forward_rounded,
-                      size: 13,
-                      color: Color(0xFF00796B),
-                    ),
-                  ],
-                ),
+            const SizedBox(width: 8),
+
+            // Gift Now Pill
+            Container(
+              padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
+              decoration: BoxDecoration(
+                color: const Color(0xFF00796B),
+                borderRadius: BorderRadius.circular(14),
               ),
-            ],
-          ),
-
-          const SizedBox(height: 12),
-
-          // Price & Chart Row
-          Row(
-            crossAxisAlignment: CrossAxisAlignment.center,
-            children: [
-              // Price and Percentage Change
-              Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
+              child: const Row(
+                mainAxisSize: MainAxisSize.min,
                 children: [
-                  const Text(
-                    '₹14,346.67 / gm',
+                  Text(
+                    'Gift',
                     style: TextStyle(
-                      fontSize: 21,
-                      fontWeight: FontWeight.w900,
-                      color: Color(0xFF0F172A),
-                      letterSpacing: -0.4,
+                      fontSize: 11.5,
+                      fontWeight: FontWeight.w700,
+                      color: Colors.white,
                     ),
                   ),
-                  const SizedBox(height: 4),
-                  Row(
-                    children: const [
-                      Icon(
-                        Icons.arrow_drop_up_rounded,
-                        size: 18,
-                        color: Color(0xFF059669),
-                      ),
-                      Text(
-                        '+0.8% (₹112.30)',
-                        style: TextStyle(
-                          fontSize: 12.5,
-                          fontWeight: FontWeight.w700,
-                          color: Color(0xFF059669),
-                        ),
-                      ),
-                    ],
+                  SizedBox(width: 3),
+                  Icon(
+                    Icons.chevron_right_rounded,
+                    size: 14,
+                    color: Colors.white,
                   ),
                 ],
               ),
-
-              const Spacer(),
-
-              // Golden Wave Line Chart
-              SizedBox(
-                width: 154,
-                height: 52,
-                child: CustomPaint(
-                  painter: HomeLivePriceChartPainter(),
-                ),
-              ),
-            ],
-          ),
-        ],
+            ),
+          ],
+        ),
       ),
     );
   }
 
-  /// "Lowest Gold Price in Last 6 Months" Banner Card
+  /// "Track Price Trends & Save at the Right Time" Banner Card
   Widget _buildLowestPriceBanner(BuildContext context) {
     return InkWell(
       onTap: () {
@@ -906,9 +852,9 @@ class _HomeScreenState extends State<HomeScreen> {
                   ),
                   SizedBox(height: 4),
                   Text(
-                    'Lowest Gold Price\nin Last 6 Months',
+                    'Track Price Trends\n& Save at the Right Time',
                     style: TextStyle(
-                      fontSize: 16.5,
+                      fontSize: 15.5,
                       fontWeight: FontWeight.w900,
                       color: Color(0xFF0F172A),
                       height: 1.2,
@@ -917,7 +863,7 @@ class _HomeScreenState extends State<HomeScreen> {
                   ),
                   SizedBox(height: 5),
                   Text(
-                    'Best time to buy and grow\nyour savings.',
+                    'Learn how gold prices move and\nwhen to invest.',
                     style: TextStyle(
                       fontSize: 11,
                       fontWeight: FontWeight.w500,
@@ -933,7 +879,7 @@ class _HomeScreenState extends State<HomeScreen> {
 
             // Right 3D Calendar & Clock Graphic
             SizedBox(
-              width: 125,
+              width: 120,
               height: 92,
               child: Image.asset(
                 'assets/home_calendar_feathered.png',
@@ -947,277 +893,191 @@ class _HomeScreenState extends State<HomeScreen> {
     );
   }
 
-  /// Recent Activity Section with Bought Gold & Bought Silver Transactions
-  Widget _buildRecentActivitySection(BuildContext context) {
+  /// Discover & Learn Section with Tapable Header & Large Image/Description Cards
+  Widget _buildDiscoverAndLearnSection(BuildContext context) {
     return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        // Header Row: Recent Activity | View all ->
-        Row(
-          mainAxisAlignment: MainAxisAlignment.spaceBetween,
-          children: [
-            const Text(
-              'Recent Activity',
-              style: TextStyle(
-                fontSize: 16.5,
-                fontWeight: FontWeight.w800,
-                color: Color(0xFF0F172A),
-                letterSpacing: -0.3,
+        // Tapable Header: "Discover & Learn ›" (Opens Dedicated Full Screen)
+        InkWell(
+          onTap: () {
+            Navigator.of(context).push(
+              MaterialPageRoute(
+                builder: (_) => const DiscoverScreen(),
               ),
-            ),
-            InkWell(
-              onTap: () {
-                Navigator.of(context).push(
-                  MaterialPageRoute(builder: (_) => const TransactionsScreen()),
-                );
-              },
-              child: Row(
-                children: const [
-                  Text(
-                    'View all',
-                    style: TextStyle(
-                      fontSize: 12.5,
-                      fontWeight: FontWeight.w700,
-                      color: Color(0xFF00796B),
-                    ),
+            );
+          },
+          borderRadius: BorderRadius.circular(8),
+          child: Padding(
+            padding: const EdgeInsets.symmetric(vertical: 4),
+            child: Row(
+              mainAxisSize: MainAxisSize.min,
+              children: const [
+                Text(
+                  'Discover & Learn',
+                  style: TextStyle(
+                    fontSize: 17,
+                    fontWeight: FontWeight.w800,
+                    color: Color(0xFF0F172A),
+                    letterSpacing: -0.3,
                   ),
-                  SizedBox(width: 3),
-                  Icon(
-                    Icons.arrow_forward_rounded,
-                    size: 13,
-                    color: Color(0xFF00796B),
-                  ),
-                ],
-              ),
+                ),
+                SizedBox(width: 4),
+                Icon(
+                  Icons.chevron_right_rounded,
+                  size: 20,
+                  color: Color(0xFF64748B),
+                ),
+              ],
             ),
-          ],
+          ),
         ),
 
-        const SizedBox(height: 10),
+        const SizedBox(height: 12),
 
-        // Activity Card
-        Container(
-          width: double.infinity,
-          decoration: BoxDecoration(
-            color: Colors.white,
-            borderRadius: BorderRadius.circular(18),
-            border: Border.all(
-              color: const Color(0xFFF1F5F9),
-              width: 1.2,
-            ),
-            boxShadow: [
-              BoxShadow(
-                color: Colors.black.withValues(alpha: 0.03),
-                blurRadius: 10,
-                offset: const Offset(0, 4),
-              ),
-            ],
-          ),
-          child: Column(
-            children: [
-              // 1. Bought Gold Item
-              _buildTransactionItem(
-                iconColor: const Color(0xFFD97706),
-                iconBg: const Color(0xFFFEF3C7),
-                icon: Icons.arrow_upward_rounded,
-                title: 'Bought Gold',
-                date: '12 Oct 2026, 11:34 AM',
-                amount: '₹2,014.00',
-                quantity: '0.1380 g',
-                onTap: () {
-                  Navigator.of(context).push(
-                    MaterialPageRoute(builder: (_) => const TransactionsScreen()),
-                  );
-                },
-              ),
-
-              const Divider(
-                height: 1,
-                thickness: 1,
-                color: Color(0xFFF8FAFC),
-                indent: 58,
-                endIndent: 16,
-              ),
-
-              // 2. Bought Silver Item
-              _buildTransactionItem(
-                iconColor: const Color(0xFFEF4444),
-                iconBg: const Color(0xFFFEE2E2),
-                icon: Icons.arrow_downward_rounded,
-                title: 'Bought Silver',
-                date: '5 Oct 2026, 4:12 PM',
-                amount: '₹460.50',
-                quantity: '5.000 g',
-                onTap: () {
-                  Navigator.of(context).push(
-                    MaterialPageRoute(builder: (_) => const TransactionsScreen()),
-                  );
-                },
-              ),
-            ],
+        // Enlarged Horizontal Carousel of Article Cards
+        SizedBox(
+          height: 220,
+          child: ListView.separated(
+            scrollDirection: Axis.horizontal,
+            physics: const BouncingScrollPhysics(),
+            itemCount: DiscoverData.articles.length,
+            separatorBuilder: (context, index) => const SizedBox(width: 14),
+            itemBuilder: (context, index) {
+              final article = DiscoverData.articles[index];
+              return _buildDiscoverCard(context, article);
+            },
           ),
         ),
       ],
     );
   }
 
-  Widget _buildTransactionItem({
-    required Color iconColor,
-    required Color iconBg,
-    required IconData icon,
-    required String title,
-    required String date,
-    required String amount,
-    required String quantity,
-    required VoidCallback onTap,
-  }) {
+  /// Enlarged Individual Discover Card with Large Image, Category, Title, and Date
+  Widget _buildDiscoverCard(BuildContext context, DiscoverArticle article) {
     return InkWell(
-      onTap: onTap,
-      borderRadius: BorderRadius.circular(18),
-      child: Padding(
-        padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
-        child: Row(
-          children: [
-            // Round Indicator Icon
-            Container(
-              width: 36,
-              height: 36,
-              decoration: BoxDecoration(
-                color: iconBg,
-                shape: BoxShape.circle,
-              ),
-              child: Center(
-                child: Icon(icon, color: iconColor, size: 18),
-              ),
-            ),
-
-            const SizedBox(width: 12),
-
-            // Title & Timestamp
-            Expanded(
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Text(
-                    title,
-                    style: const TextStyle(
-                      fontSize: 14,
-                      fontWeight: FontWeight.w700,
-                      color: Color(0xFF0F172A),
-                    ),
-                  ),
-                  const SizedBox(height: 2),
-                  Text(
-                    date,
-                    style: const TextStyle(
-                      fontSize: 11.5,
-                      fontWeight: FontWeight.w500,
-                      color: Color(0xFF64748B),
-                    ),
-                  ),
-                ],
-              ),
-            ),
-
-            // Amount & Quantity
-            Column(
-              crossAxisAlignment: CrossAxisAlignment.end,
-              children: [
-                Text(
-                  amount,
-                  style: const TextStyle(
-                    fontSize: 14,
-                    fontWeight: FontWeight.w800,
-                    color: Color(0xFF0F172A),
-                  ),
-                ),
-                const SizedBox(height: 2),
-                Text(
-                  quantity,
-                  style: const TextStyle(
-                    fontSize: 11.5,
-                    fontWeight: FontWeight.w500,
-                    color: Color(0xFF64748B),
-                  ),
-                ),
-              ],
-            ),
-
-            const SizedBox(width: 6),
-
-            const Icon(
-              Icons.chevron_right_rounded,
-              size: 16,
-              color: Color(0xFF94A3B8),
+      onTap: () {
+        Navigator.of(context).push(
+          MaterialPageRoute(
+            builder: (_) => DiscoverDetailScreen(article: article),
+          ),
+        );
+      },
+      borderRadius: BorderRadius.circular(20),
+      child: Container(
+        width: 200,
+        decoration: BoxDecoration(
+          color: Colors.white,
+          borderRadius: BorderRadius.circular(20),
+          border: Border.all(
+            color: const Color(0xFFF1F5F9),
+            width: 1.2,
+          ),
+          boxShadow: [
+            BoxShadow(
+              color: Colors.black.withValues(alpha: 0.04),
+              blurRadius: 10,
+              offset: const Offset(0, 3),
             ),
           ],
+        ),
+        child: ClipRRect(
+          borderRadius: BorderRadius.circular(19),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              // Large Top Image Thumbnail
+              SizedBox(
+                height: 114,
+                width: double.infinity,
+                child: Image.asset(
+                  article.imageAsset,
+                  fit: BoxFit.cover,
+                ),
+              ),
+
+              // Content Padding
+              Padding(
+                padding: const EdgeInsets.fromLTRB(12, 10, 12, 12),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    // Category & Read Time
+                    Row(
+                      children: [
+                        Container(
+                          padding: const EdgeInsets.symmetric(horizontal: 7, vertical: 2.5),
+                          decoration: BoxDecoration(
+                            color: const Color(0xFFF0FDFA),
+                            borderRadius: BorderRadius.circular(6),
+                            border: Border.all(color: const Color(0xFF99F6E4), width: 0.8),
+                          ),
+                          child: Text(
+                            article.category,
+                            style: const TextStyle(
+                              fontSize: 9,
+                              fontWeight: FontWeight.w700,
+                              color: Color(0xFF0D9488),
+                              letterSpacing: 0.3,
+                            ),
+                          ),
+                        ),
+                        const Spacer(),
+                        Text(
+                          article.readTime,
+                          style: const TextStyle(
+                            fontSize: 10.5,
+                            fontWeight: FontWeight.w500,
+                            color: Color(0xFF94A3B8),
+                          ),
+                        ),
+                      ],
+                    ),
+
+                    const SizedBox(height: 6),
+
+                    // Title
+                    Text(
+                      article.title.replaceAll('\n', ' '),
+                      maxLines: 2,
+                      overflow: TextOverflow.ellipsis,
+                      style: const TextStyle(
+                        fontSize: 13,
+                        fontWeight: FontWeight.w800,
+                        color: Color(0xFF0F172A),
+                        height: 1.25,
+                        letterSpacing: -0.2,
+                      ),
+                    ),
+
+                    const SizedBox(height: 6),
+
+                    // Date
+                    Row(
+                      children: [
+                        const Icon(
+                          Icons.calendar_today_outlined,
+                          size: 11,
+                          color: Color(0xFF94A3B8),
+                        ),
+                        const SizedBox(width: 4),
+                        Text(
+                          article.date,
+                          style: const TextStyle(
+                            fontSize: 10.5,
+                            fontWeight: FontWeight.w500,
+                            color: Color(0xFF64748B),
+                          ),
+                        ),
+                      ],
+                    ),
+                  ],
+                ),
+              ),
+            ],
+          ),
         ),
       ),
     );
   }
-}
-
-/// Custom Painter for the Smooth Golden Wave Curve on Live Gold Price Card
-class HomeLivePriceChartPainter extends CustomPainter {
-  @override
-  void paint(Canvas canvas, Size size) {
-    final w = size.width;
-    final h = size.height;
-
-    final path = Path();
-    // Normalized curve points matching the exact wave in reference:
-    // Dip on left, soft crest, minor consolidation, soaring peak on top right
-    final points = [
-      Offset(0, h * 0.72),
-      Offset(w * 0.16, h * 0.58),
-      Offset(w * 0.32, h * 0.64),
-      Offset(w * 0.48, h * 0.44),
-      Offset(w * 0.65, h * 0.48),
-      Offset(w * 0.82, h * 0.30),
-      Offset(w * 0.98, h * 0.14),
-    ];
-
-    path.moveTo(points[0].dx, points[0].dy);
-    for (int i = 0; i < points.length - 1; i++) {
-      final p0 = points[i];
-      final p1 = points[i + 1];
-      final cpX = (p0.dx + p1.dx) / 2;
-      path.cubicTo(cpX, p0.dy, cpX, p1.dy, p1.dx, p1.dy);
-    }
-
-    // Fill underneath curve
-    final fillPath = Path.from(path)
-      ..lineTo(w * 0.98, h)
-      ..lineTo(0, h)
-      ..close();
-
-    final fillPaint = Paint()
-      ..shader = LinearGradient(
-        begin: Alignment.topCenter,
-        end: Alignment.bottomCenter,
-        colors: [
-          const Color(0xFFFBBF24).withValues(alpha: 0.35),
-          const Color(0xFFFEF3C7).withValues(alpha: 0.02),
-        ],
-      ).createShader(Rect.fromLTWH(0, 0, w, h));
-    canvas.drawPath(fillPath, fillPaint);
-
-    // Stroke the golden curve
-    final strokePaint = Paint()
-      ..color = const Color(0xFFEAB308)
-      ..strokeWidth = 2.4
-      ..style = PaintingStyle.stroke
-      ..strokeCap = StrokeCap.round
-      ..strokeJoin = StrokeJoin.round;
-    canvas.drawPath(path, strokePaint);
-
-    // Peak Glowing Golden Dot at the top right tip
-    final peak = points.last;
-    final auraPaint = Paint()..color = const Color(0xFFFEF08A);
-    final dotPaint = Paint()..color = const Color(0xFFEAB308);
-    canvas.drawCircle(peak, 4.5, auraPaint);
-    canvas.drawCircle(peak, 3.0, dotPaint);
-  }
-
-  @override
-  bool shouldRepaint(covariant CustomPainter oldDelegate) => false;
 }
