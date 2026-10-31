@@ -2,6 +2,10 @@ import 'package:flutter/material.dart';
 import '../../screens/buy_screen.dart';
 import '../../screens/portfolio_screen.dart';
 import '../../screens/transactions_screen.dart';
+import '../../screens/gullaks_screen.dart';
+import '../../screens/profile_screen.dart';
+import '../gullak/gullak_bottom_nav.dart';
+import '../gullak/gullak_painters.dart';
 import 'home_bottom_painters.dart';
 
 class HomeWhiteBottomSection extends StatelessWidget {
@@ -314,131 +318,19 @@ class HomeTrendingCard extends StatelessWidget {
 
 class HomeBottomNav extends StatelessWidget {
   final int selectedIndex;
-  final ValueChanged<int> onTabSelected;
+  final ValueChanged<int>? onTabSelected;
 
   const HomeBottomNav({
     super.key,
     required this.selectedIndex,
-    required this.onTabSelected,
+    this.onTabSelected,
   });
 
   @override
   Widget build(BuildContext context) {
-    return Container(
-      height: 64,
-      decoration: BoxDecoration(
-        color: Colors.white,
-        border: Border(
-          top: BorderSide(
-            color: const Color(0xFFE2E8F0).withValues(alpha: 0.8),
-            width: 1.0,
-          ),
-        ),
-      ),
-      child: Row(
-        mainAxisAlignment: MainAxisAlignment.spaceAround,
-        children: [
-          _buildItem(
-            context: context,
-            index: 0,
-            label: 'Home',
-            icon: Icons.home_rounded,
-            onTap: () => onTabSelected(0),
-          ),
-          _buildGullakItem(
-            context: context,
-            index: 1,
-            label: 'Gullaks',
-            onTap: () {
-              onTabSelected(1);
-              Navigator.of(context).push(
-                MaterialPageRoute(builder: (_) => const TransactionsScreen()),
-              );
-            },
-          ),
-          _buildItem(
-            context: context,
-            index: 2,
-            label: 'Dashboard',
-            icon: Icons.pie_chart_outline_rounded,
-            onTap: () {
-              onTabSelected(2);
-              Navigator.of(context).push(
-                MaterialPageRoute(builder: (_) => const PortfolioScreen()),
-              );
-            },
-          ),
-        ],
-      ),
-    );
-  }
-
-  Widget _buildItem({
-    required BuildContext context,
-    required int index,
-    required String label,
-    required IconData icon,
-    required VoidCallback onTap,
-  }) {
-    final isSelected = selectedIndex == index;
-    final color = isSelected ? const Color(0xFF00AAA1) : const Color(0xFF94A3B8);
-
-    return InkWell(
-      onTap: onTap,
-      child: SizedBox(
-        width: 80,
-        child: Column(
-          mainAxisAlignment: MainAxisAlignment.center,
-          children: [
-            Icon(icon, size: 24, color: color),
-            const SizedBox(height: 3),
-            Text(
-              label,
-              style: TextStyle(
-                fontSize: 11,
-                fontWeight: isSelected ? FontWeight.w700 : FontWeight.w500,
-                color: color,
-              ),
-            ),
-          ],
-        ),
-      ),
-    );
-  }
-
-  Widget _buildGullakItem({
-    required BuildContext context,
-    required int index,
-    required String label,
-    required VoidCallback onTap,
-  }) {
-    final isSelected = selectedIndex == index;
-    final color = isSelected ? const Color(0xFF00AAA1) : const Color(0xFF94A3B8);
-
-    return InkWell(
-      onTap: onTap,
-      child: SizedBox(
-        width: 80,
-        child: Column(
-          mainAxisAlignment: MainAxisAlignment.center,
-          children: [
-            SizedBox(
-              width: 24,
-              height: 24,
-              child: CustomPaint(painter: GullakIconPainter(color: color)),
-            ),
-            const SizedBox(height: 3),
-            Text(
-              label,
-              style: TextStyle(
-                fontSize: 11,
-                fontWeight: isSelected ? FontWeight.w700 : FontWeight.w500,
-                color: color,
-              ),
-            ),
-          ],
-        ),
-      ),
+    return GullakBottomNav(
+      selectedIndex: selectedIndex,
+      onTabSelected: onTabSelected,
     );
   }
 }

@@ -7,6 +7,8 @@ import 'portfolio_screen.dart';
 import 'transactions_screen.dart';
 import 'price_history_screen.dart';
 import 'profile_screen.dart';
+import 'gullaks_screen.dart';
+import 'gullak_goals_screen.dart';
 
 class ScreenShowcaseShell extends StatefulWidget {
   const ScreenShowcaseShell({super.key});
@@ -29,6 +31,8 @@ class _ScreenShowcaseShellState extends State<ScreenShowcaseShell> {
     '6. Transactions',
     '7. Price History',
     '8. Profile',
+    '9. Gullaks (Section)',
+    '10. What\'s your goal? (Goals)',
   ];
 
   Widget _getScreenWidget(int index) {
@@ -49,6 +53,10 @@ class _ScreenShowcaseShellState extends State<ScreenShowcaseShell> {
         return const PriceHistoryScreen();
       case 7:
         return const ProfileScreen();
+      case 8:
+        return const GullaksScreen();
+      case 9:
+        return const GullakGoalsScreen();
       default:
         return const HomeScreen();
     }

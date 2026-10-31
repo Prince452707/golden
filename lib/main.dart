@@ -10,16 +10,24 @@ import 'screens/price_history_screen.dart';
 import 'screens/profile_screen.dart';
 import 'screens/signup_screen.dart';
 import 'screens/screen_showcase_shell.dart';
+import 'screens/gullaks_screen.dart';
+import 'screens/gullak_goals_screen.dart';
 import 'theme/app_theme.dart';
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
 
- 
-  await SystemChrome.setEnabledSystemUIMode(
-    SystemUiMode.manual,
-    overlays: [SystemUiOverlay.top],
-  );
+  
+  await SystemChrome.setEnabledSystemUIMode(SystemUiMode.immersiveSticky);
+
+
+  SystemChrome.setSystemUIChangeCallback((systemOverlaysAreVisible) async {
+    if (systemOverlaysAreVisible) {
+      Future.delayed(const Duration(seconds: 2), () {
+        SystemChrome.setEnabledSystemUIMode(SystemUiMode.immersiveSticky);
+      });
+    }
+  });
 
   SystemChrome.setSystemUIOverlayStyle(
     const SystemUiOverlayStyle(
@@ -58,6 +66,8 @@ class GoldApp extends StatelessWidget {
         '/profile': (context) => const ProfileScreen(),
         '/signup': (context) => const SignupScreen(),
         '/showcase': (context) => const ScreenShowcaseShell(),
+        '/gullaks': (context) => const GullaksScreen(),
+        '/gullak_goals': (context) => const GullakGoalsScreen(),
       },
     );
   }

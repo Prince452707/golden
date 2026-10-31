@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import '../widgets/gold_3d_widgets.dart';
+import '../widgets/gullak/gullak_bottom_nav.dart';
 import 'signup_screen.dart';
 
 class ProfileScreen extends StatelessWidget {
@@ -17,9 +18,9 @@ class ProfileScreen extends StatelessWidget {
     return Scaffold(
       backgroundColor: const Color(0xFFF8FAFC),
       body: SafeArea(
+        bottom: false,
         child: Column(
           children: [
-            // App Bar: Back Arrow
             Padding(
               padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
               child: Align(
@@ -70,6 +71,9 @@ class ProfileScreen extends StatelessWidget {
                 ),
               ),
             ),
+
+            // Bottom Navigation Bar with Profile selected (index 3)
+            const GullakBottomNav(selectedIndex: 3),
           ],
         ),
       ),
