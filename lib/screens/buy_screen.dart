@@ -1,7 +1,10 @@
 import 'dart:async';
 import 'package:flutter/material.dart';
+import 'package:golden/core/models/rate_models.dart';
 import '../widgets/gold_3d_widgets.dart';
 import '../widgets/transaction_success_dialog.dart';
+import '../services/golden_api_service.dart';
+import '../core/models/order_models.dart';
 
 class BuyScreen extends StatefulWidget {
   final bool initialIsGold;
@@ -23,21 +26,30 @@ class _BuyScreenState extends State<BuyScreen> {
   late bool _isGoldSelected;
   late double _amount;
   late final TextEditingController _amountController;
-
-  final double _goldRatePerGm = 14370.20;
-  final double _silverRatePerGm = 92.14;
+  BuyCalculationModel? _liveCalc;
 
   final List<double> _presetAmounts = [500, 1000, 2500, 5000, 10000, 25000];
 
-  double get _currentRate => _isGoldSelected ? _goldRatePerGm : _silverRatePerGm;
-  double get _calculatedGrams => _amount / _currentRate;
+  double get _currentRate {
+    if (_liveCalc?.ratePerGram != null && _liveCalc!.ratePerGram > 0) {
+      return _liveCalc!.ratePerGram;
+    }
+    final latest = GoldenApiService.instance.latestRates;
+    if (latest != null) {
+      return _isGoldSelected ? latest.gold.buyPricePerGram : latest.silver.buyPricePerGram;
+    }
+    return 0.0;
+  }
 
-  // 3% GST calculation
-  double get _gstAmount => _amount * (3 / 103);
-  double get _basePrice => _amount - _gstAmount;
+  double get _calculatedGrams => _currentRate > 0 ? (_liveCalc?.grams ?? (_amount / _currentRate)) : 0.0;
+
+  // 3% GST calculation from Live Calculation API
+  double get _gstAmount => _liveCalc?.gstAmount ?? (_amount * (3 / 103));
+  double get _basePrice => _liveCalc?.basePrice ?? (_amount - _gstAmount);
 
   int _countdownSeconds = 299; // 5 minute price lock
   Timer? _countdownTimer;
+  StreamSubscription<LiveRatesData>? _rateSub;
 
   @override
   void initState() {
@@ -46,6 +58,21 @@ class _BuyScreenState extends State<BuyScreen> {
     _amount = widget.initialAmount ?? 10000;
     _amountController = TextEditingController(text: _formatCurrency(_amount));
     _startPriceLockTimer();
+    _updateCalculation();
+
+    _rateSub = GoldenApiService.instance.liveRateStream.listen((_) {
+      if (mounted) _updateCalculation();
+    });
+  }
+
+  void _updateCalculation() async {
+    final res = await GoldenApiService.instance.calculateBuyQuote(
+      metal: _isGoldSelected ? 'gold' : 'silver',
+      amount: _amount,
+    );
+    if (mounted && res.data != null) {
+      setState(() => _liveCalc = res.data);
+    }
   }
 
   void _startPriceLockTimer() {
@@ -65,6 +92,7 @@ class _BuyScreenState extends State<BuyScreen> {
 
   @override
   void dispose() {
+    _rateSub?.cancel();
     _countdownTimer?.cancel();
     _amountController.dispose();
     super.dispose();
@@ -75,6 +103,7 @@ class _BuyScreenState extends State<BuyScreen> {
       _amount = amt;
       _amountController.text = _formatCurrency(amt);
     });
+    _updateCalculation();
   }
 
   void _onAmountChanged(String val) {
@@ -84,6 +113,7 @@ class _BuyScreenState extends State<BuyScreen> {
       setState(() {
         _amount = parsed;
       });
+      _updateCalculation();
     }
   }
 
@@ -102,7 +132,9 @@ class _BuyScreenState extends State<BuyScreen> {
 
   @override
   Widget build(BuildContext context) {
-    final liveRateStr = _isGoldSelected ? '₹14,370.20/g' : '₹92.14/g';
+    final liveRateStr = _currentRate > 0
+        ? '₹${_currentRate.toStringAsFixed(2)}/g'
+        : 'Loading rate...';
     final gramsStr = _calculatedGrams.toStringAsFixed(4);
     final metalName = _isGoldSelected ? '24K Gold' : '99.9% Silver';
 
@@ -358,6 +390,7 @@ class _BuyScreenState extends State<BuyScreen> {
                 setState(() {
                   _isGoldSelected = true;
                 });
+                _updateCalculation();
               },
               child: AnimatedContainer(
                 duration: const Duration(milliseconds: 200),
@@ -413,6 +446,7 @@ class _BuyScreenState extends State<BuyScreen> {
                 setState(() {
                   _isGoldSelected = false;
                 });
+                _updateCalculation();
               },
               child: AnimatedContainer(
                 duration: const Duration(milliseconds: 200),
@@ -871,7 +905,21 @@ class _BuyScreenState extends State<BuyScreen> {
         width: double.infinity,
         height: 52,
         child: ElevatedButton(
-          onPressed: () {
+          onPressed: () async {
+            // 1. Initiate Buy Order & UPI Intent
+            final initiated = await GoldenApiService.instance.initiateBuyOrder(
+              metal: _isGoldSelected ? 'gold' : 'silver',
+              amount: _amount,
+              paymentMethod: 'UPI',
+              goalName: widget.goalName,
+            );
+
+            // 2. Confirm Buy Order & Credit Vault
+            final orderId = initiated.data?.orderId ?? 'GLD-BUY-${DateTime.now().millisecondsSinceEpoch % 10000000}';
+            await GoldenApiService.instance.confirmBuyOrder(orderId: orderId);
+
+            if (!mounted) return;
+
             TransactionSuccessDialog.showBuySuccess(
               context: context,
               isGold: _isGoldSelected,

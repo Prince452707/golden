@@ -1,6 +1,9 @@
+import 'dart:async';
 import 'package:flutter/material.dart';
 import '../widgets/gold_3d_widgets.dart';
 import 'price_history_screen.dart';
+import '../services/golden_api_service.dart';
+import '../core/models/rate_models.dart';
 
 class LiveRatesScreen extends StatefulWidget {
   const LiveRatesScreen({super.key});
@@ -14,14 +17,78 @@ class _LiveRatesScreenState extends State<LiveRatesScreen> {
   String _goldFilter = '1M';
   String _silverFilter = '1M';
 
-  // Sample data points matching screenshot curve
-  final List<double> _goldPoints = [
-    13950, 14020, 13880, 14100, 13990, 14220, 14180, 14350, 14290, 14370.20
-  ];
+  StreamSubscription<LiveRatesData>? _rateSub;
+  LiveRatesData? _ratesData;
+  LockQuoteModel? _lockedQuote;
+  bool _isLocking = false;
 
-  final List<double> _silverPoints = [
-    88.5, 89.2, 88.0, 90.1, 89.4, 91.0, 90.2, 91.8, 91.2, 92.14
-  ];
+  List<double> _goldPoints = [];
+  List<double> _silverPoints = [];
+
+  @override
+  void initState() {
+    super.initState();
+    _initRates();
+  }
+
+  void _initRates() async {
+    _rateSub = GoldenApiService.instance.liveRateStream.listen((data) {
+      if (mounted) setState(() => _ratesData = data);
+    });
+
+    final res = await GoldenApiService.instance.getLiveRates();
+    if (mounted && res.data != null) {
+      setState(() => _ratesData = res.data);
+    }
+
+    _loadGoldHistory(_goldFilter);
+    _loadSilverHistory(_silverFilter);
+  }
+
+  void _loadGoldHistory(String range) async {
+    final res = await GoldenApiService.instance.getPriceHistory(metal: 'gold', range: range);
+    if (mounted && res.data != null && res.data!.points.isNotEmpty) {
+      setState(() {
+        _goldPoints = res.data!.points.map((p) => p.price).toList();
+      });
+    }
+  }
+
+  void _loadSilverHistory(String range) async {
+    final res = await GoldenApiService.instance.getPriceHistory(metal: 'silver', range: range);
+    if (mounted && res.data != null && res.data!.points.isNotEmpty) {
+      setState(() {
+        _silverPoints = res.data!.points.map((p) => p.price).toList();
+      });
+    }
+  }
+
+  @override
+  void dispose() {
+    _rateSub?.cancel();
+    super.dispose();
+  }
+
+  void _lockCurrentPrice() async {
+    setState(() => _isLocking = true);
+    final res = await GoldenApiService.instance.lockPriceQuote(
+      metal: _isGoldSelected ? 'gold' : 'silver',
+    );
+    if (!mounted) return;
+
+    setState(() {
+      _isLocking = false;
+      _lockedQuote = res.data;
+    });
+
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(
+        content: Text('🔒 Price locked at ₹${res.data?.ratePerGram ?? _ratesData?.gold.buyPricePerGram ?? 0.0}/gm for 5 minutes!'),
+        backgroundColor: const Color(0xFF005953),
+        behavior: SnackBarBehavior.floating,
+      ),
+    );
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -93,6 +160,61 @@ class _LiveRatesScreenState extends State<LiveRatesScreen> {
 
                     // Card 2: Silver (999)
                     _buildSilverRateCard(),
+
+                    const SizedBox(height: 16),
+
+                    // 5-Minute Price Lock Guarantee Action Card
+                    Container(
+                      padding: const EdgeInsets.all(14),
+                      decoration: BoxDecoration(
+                        color: const Color(0xFFFEF3C7).withValues(alpha: 0.5),
+                        borderRadius: BorderRadius.circular(16),
+                        border: Border.all(color: const Color(0xFFFDE68A)),
+                      ),
+                      child: Row(
+                        children: [
+                          Container(
+                            padding: const EdgeInsets.all(8),
+                            decoration: const BoxDecoration(
+                              color: Color(0xFFD97706),
+                              shape: BoxShape.circle,
+                            ),
+                            child: const Icon(Icons.lock_clock_rounded, color: Colors.white, size: 20),
+                          ),
+                          const SizedBox(width: 12),
+                          Expanded(
+                            child: Column(
+                              crossAxisAlignment: CrossAxisAlignment.start,
+                              children: [
+                                Text(
+                                  _lockedQuote != null
+                                      ? 'Price Locked: ₹${_lockedQuote!.ratePerGram}/g'
+                                      : '5-Minute Price Lock',
+                                  style: const TextStyle(fontWeight: FontWeight.w800, fontSize: 13.5),
+                                ),
+                                const SizedBox(height: 2),
+                                Text(
+                                  _lockedQuote != null
+                                      ? 'Quote ID: ${_lockedQuote!.quoteId} (valid for 5m)'
+                                      : 'Protect against market volatility during checkout',
+                                  style: const TextStyle(fontSize: 11.5, color: Color(0xFF78350F)),
+                                ),
+                              ],
+                            ),
+                          ),
+                          ElevatedButton(
+                            onPressed: _isLocking ? null : _lockCurrentPrice,
+                            style: ElevatedButton.styleFrom(
+                              backgroundColor: const Color(0xFF005953),
+                              foregroundColor: Colors.white,
+                              padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+                              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
+                            ),
+                            child: Text(_isLocking ? '...' : (_lockedQuote != null ? 'Re-lock' : 'Lock Price')),
+                          ),
+                        ],
+                      ),
+                    ),
 
                     const SizedBox(height: 24),
 
@@ -199,17 +321,19 @@ class _LiveRatesScreenState extends State<LiveRatesScreen> {
                       Row(
                         crossAxisAlignment: CrossAxisAlignment.baseline,
                         textBaseline: TextBaseline.alphabetic,
-                        children: const [
+                        children: [
                           Text(
-                            '₹14,370.20',
-                            style: TextStyle(
+                            _ratesData != null && _ratesData!.gold.buyPricePerGram > 0
+                                ? '₹${_ratesData!.gold.buyPricePerGram.toStringAsFixed(2)}'
+                                : '--',
+                            style: const TextStyle(
                               fontSize: 20,
                               fontWeight: FontWeight.w900,
                               color: Color(0xFF0F172A),
                               letterSpacing: -0.3,
                             ),
                           ),
-                          Text(
+                          const Text(
                             ' / gm',
                             style: TextStyle(
                               fontSize: 13,
@@ -221,14 +345,26 @@ class _LiveRatesScreenState extends State<LiveRatesScreen> {
                       ),
                       const SizedBox(height: 3),
                       Row(
-                        children: const [
-                          Icon(Icons.arrow_drop_up_rounded, size: 18, color: Color(0xFF10B981)),
+                        children: [
+                          Icon(
+                            (_ratesData?.gold.changeTodayPercentage ?? 0.0) >= 0
+                                ? Icons.arrow_drop_up_rounded
+                                : Icons.arrow_drop_down_rounded,
+                            size: 18,
+                            color: (_ratesData?.gold.changeTodayPercentage ?? 0.0) >= 0
+                                ? const Color(0xFF10B981)
+                                : const Color(0xFFEF4444),
+                          ),
                           Text(
-                            '+0.8% today',
+                            _ratesData != null
+                                ? '${_ratesData!.gold.changeTodayPercentage >= 0 ? '+' : ''}${_ratesData!.gold.changeTodayPercentage.toStringAsFixed(1)}% today'
+                                : '--',
                             style: TextStyle(
                               fontSize: 12,
                               fontWeight: FontWeight.w700,
-                              color: Color(0xFF10B981),
+                              color: (_ratesData?.gold.changeTodayPercentage ?? 0.0) >= 0
+                                  ? const Color(0xFF10B981)
+                                  : const Color(0xFFEF4444),
                             ),
                           ),
                         ],
@@ -258,6 +394,7 @@ class _LiveRatesScreenState extends State<LiveRatesScreen> {
                 setState(() {
                   _goldFilter = val;
                 });
+                _loadGoldHistory(val);
               },
             ),
           ],
@@ -306,17 +443,19 @@ class _LiveRatesScreenState extends State<LiveRatesScreen> {
                     Row(
                       crossAxisAlignment: CrossAxisAlignment.baseline,
                       textBaseline: TextBaseline.alphabetic,
-                      children: const [
+                      children: [
                         Text(
-                          '₹92.14',
-                          style: TextStyle(
+                          _ratesData != null && _ratesData!.silver.buyPricePerGram > 0
+                              ? '₹${_ratesData!.silver.buyPricePerGram.toStringAsFixed(2)}'
+                              : '--',
+                          style: const TextStyle(
                             fontSize: 20,
                             fontWeight: FontWeight.w900,
                             color: Color(0xFF0F172A),
                             letterSpacing: -0.3,
                           ),
                         ),
-                        Text(
+                        const Text(
                           ' / gm',
                           style: TextStyle(
                             fontSize: 13,
@@ -328,14 +467,26 @@ class _LiveRatesScreenState extends State<LiveRatesScreen> {
                     ),
                     const SizedBox(height: 3),
                     Row(
-                      children: const [
-                        Icon(Icons.arrow_drop_up_rounded, size: 18, color: Color(0xFF10B981)),
+                      children: [
+                        Icon(
+                          (_ratesData?.silver.changeTodayPercentage ?? 0.0) >= 0
+                              ? Icons.arrow_drop_up_rounded
+                              : Icons.arrow_drop_down_rounded,
+                          size: 18,
+                          color: (_ratesData?.silver.changeTodayPercentage ?? 0.0) >= 0
+                              ? const Color(0xFF10B981)
+                              : const Color(0xFFEF4444),
+                        ),
                         Text(
-                          '+1.2% today',
+                          _ratesData != null
+                              ? '${_ratesData!.silver.changeTodayPercentage >= 0 ? '+' : ''}${_ratesData!.silver.changeTodayPercentage.toStringAsFixed(1)}% today'
+                              : '--',
                           style: TextStyle(
                             fontSize: 12,
                             fontWeight: FontWeight.w700,
-                            color: Color(0xFF10B981),
+                            color: (_ratesData?.silver.changeTodayPercentage ?? 0.0) >= 0
+                                ? const Color(0xFF10B981)
+                                : const Color(0xFFEF4444),
                           ),
                         ),
                       ],
@@ -365,6 +516,7 @@ class _LiveRatesScreenState extends State<LiveRatesScreen> {
               setState(() {
                 _silverFilter = val;
               });
+              _loadSilverHistory(val);
             },
           ),
         ],
@@ -373,6 +525,12 @@ class _LiveRatesScreenState extends State<LiveRatesScreen> {
   }
 
   Widget _buildPriceDetailsTable() {
+    final goldBuy = _ratesData != null ? '₹${_ratesData!.gold.buyPricePerGram.toStringAsFixed(2)}' : '--';
+    final goldSell = _ratesData != null ? '₹${_ratesData!.gold.sellPricePerGram.toStringAsFixed(2)}' : '--';
+    final silverBuy = _ratesData != null ? '₹${_ratesData!.silver.buyPricePerGram.toStringAsFixed(2)}' : '--';
+    final silverSell = _ratesData != null ? '₹${_ratesData!.silver.sellPricePerGram.toStringAsFixed(2)}' : '--';
+    final goldSpread = _ratesData != null ? '₹${_ratesData!.gold.spreadPerGram.toStringAsFixed(2)}' : '--';
+
     return Container(
       decoration: BoxDecoration(
         color: Colors.white,
@@ -382,13 +540,15 @@ class _LiveRatesScreenState extends State<LiveRatesScreen> {
       padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
       child: Column(
         children: [
-          _buildDetailRow('Gold Buying Price (incl. GST)', '₹14,370.20'),
+          _buildDetailRow('Gold Buying Price (incl. 3% GST)', goldBuy),
           const Divider(height: 18, color: Color(0xFFF1F5F9)),
-          _buildDetailRow('Gold Selling Price', '₹14,102.30'),
+          _buildDetailRow('Gold Selling Price', goldSell),
           const Divider(height: 18, color: Color(0xFFF1F5F9)),
-          _buildDetailRow('Silver Buying Price (incl. GST)', '₹92.14'),
+          _buildDetailRow('Gold Spread / gm', goldSpread),
           const Divider(height: 18, color: Color(0xFFF1F5F9)),
-          _buildDetailRow('Silver Selling Price', '₹87.60'),
+          _buildDetailRow('Silver Buying Price (incl. 3% GST)', silverBuy),
+          const Divider(height: 18, color: Color(0xFFF1F5F9)),
+          _buildDetailRow('Silver Selling Price', silverSell),
         ],
       ),
     );

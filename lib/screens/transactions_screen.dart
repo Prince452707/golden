@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import '../services/golden_api_service.dart';
 
 class TransactionsScreen extends StatefulWidget {
   const TransactionsScreen({super.key});
@@ -12,62 +13,56 @@ class _TransactionsScreenState extends State<TransactionsScreen> {
 
   final List<String> _filters = ['All', 'Buy', 'Sell', 'Gifts', 'Delivery'];
 
-  final List<_TransactionItemData> _allTransactions = [
-    _TransactionItemData(
-      type: 'Buy',
-      title: 'Bought Gold',
-      date: '12 Oct 2026, 11:34 AM',
-      amount: '₹2,014.00',
-      weight: '1.0380 g',
-      isCredit: false,
-      iconType: _TxIconType.gold,
-    ),
-    _TransactionItemData(
-      type: 'Sell',
-      title: 'Sold Silver',
-      date: '5 Oct 2026, 4:12 PM',
-      amount: '₹460.50',
-      weight: '5.000 g',
-      isCredit: true,
-      iconType: _TxIconType.silver,
-    ),
-    _TransactionItemData(
-      type: 'Gifts',
-      title: 'Gifted Gold',
-      date: '1 Oct 2026, 9:18 AM',
-      amount: '₹500.00',
-      weight: '0.0500 g',
-      isCredit: false,
-      iconType: _TxIconType.gift,
-    ),
-    _TransactionItemData(
-      type: 'Buy',
-      title: 'Bought Gold',
-      date: '22 Sept 2026, 11:30 AM',
-      amount: '₹2,014.00',
-      weight: '2.000 g',
-      isCredit: false,
-      iconType: _TxIconType.gold,
-    ),
-    _TransactionItemData(
-      type: 'Sell',
-      title: 'Sold Gold',
-      date: '10 Sept 2026, 2:14 PM',
-      amount: '₹505.00',
-      weight: '0.0600 g',
-      isCredit: true,
-      iconType: _TxIconType.soldGold,
-    ),
-    _TransactionItemData(
-      type: 'Delivery',
-      title: 'Delivery Order',
-      date: '3 Sept 2026, 6:20 PM',
-      amount: '₹8,934.00',
-      weight: '1 coin (10 g)',
-      isCredit: false,
-      iconType: _TxIconType.delivery,
-    ),
-  ];
+  final List<_TransactionItemData> _allTransactions = [];
+  bool _isLoading = true;
+
+  @override
+  void initState() {
+    super.initState();
+    _loadTransactions();
+  }
+
+  void _loadTransactions() async {
+    setState(() => _isLoading = true);
+    final res = await GoldenApiService.instance.getTransactions();
+    if (mounted) {
+      setState(() {
+        _isLoading = false;
+        if (res.data != null && res.data!.transactions.isNotEmpty) {
+          _allTransactions.clear();
+          for (final item in res.data!.transactions) {
+            final isBuy = item.type.toLowerCase() == 'buy';
+            final isSell = item.type.toLowerCase() == 'sell';
+            final isSilver = item.metal.toLowerCase() == 'silver';
+
+            _TxIconType iconType;
+            if (isBuy) {
+              iconType = isSilver ? _TxIconType.silver : _TxIconType.gold;
+            } else if (isSell) {
+              iconType = isSilver ? _TxIconType.silver : _TxIconType.soldGold;
+            } else if (item.type.toLowerCase() == 'gift') {
+              iconType = _TxIconType.gift;
+            } else {
+              iconType = _TxIconType.delivery;
+            }
+
+            _allTransactions.add(
+              _TransactionItemData(
+                orderId: item.orderId,
+                type: item.type,
+                title: item.title.isNotEmpty ? item.title : '${item.type} ${item.metal}',
+                date: item.createdAt,
+                amount: '₹${item.amount.toStringAsFixed(2)}',
+                weight: '${item.grams.toStringAsFixed(4)} g',
+                isCredit: isSell,
+                iconType: iconType,
+              ),
+            );
+          }
+        }
+      });
+    }
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -164,16 +159,47 @@ class _TransactionsScreenState extends State<TransactionsScreen> {
 
             // Transactions List
             Expanded(
-              child: ListView.separated(
-                physics: const BouncingScrollPhysics(),
-                padding: const EdgeInsets.fromLTRB(16, 8, 16, 24),
-                itemCount: filteredList.length,
-                separatorBuilder: (context, index) => const Divider(height: 18, color: Color(0xFFF1F5F9)),
-                itemBuilder: (context, index) {
-                  final item = filteredList[index];
-                  return _buildTransactionItemRow(item);
-                },
-              ),
+              child: _isLoading
+                  ? const Center(
+                      child: CircularProgressIndicator(
+                        color: Color(0xFF005953),
+                      ),
+                    )
+                  : filteredList.isEmpty
+                      ? Center(
+                          child: Column(
+                            mainAxisAlignment: MainAxisAlignment.center,
+                            children: [
+                              Icon(
+                                Icons.receipt_long_outlined,
+                                size: 54,
+                                color: Colors.grey.shade400,
+                              ),
+                              const SizedBox(height: 12),
+                              Text(
+                                _selectedFilter == 'All'
+                                    ? 'No transactions yet'
+                                    : 'No $_selectedFilter transactions found',
+                                style: const TextStyle(
+                                  fontSize: 15,
+                                  fontWeight: FontWeight.w600,
+                                  color: Color(0xFF64748B),
+                                ),
+                              ),
+                            ],
+                          ),
+                        )
+                      : ListView.separated(
+                          physics: const BouncingScrollPhysics(),
+                          padding: const EdgeInsets.fromLTRB(16, 8, 16, 24),
+                          itemCount: filteredList.length,
+                          separatorBuilder: (context, index) =>
+                              const Divider(height: 18, color: Color(0xFFF1F5F9)),
+                          itemBuilder: (context, index) {
+                            final item = filteredList[index];
+                            return _buildTransactionItemRow(item);
+                          },
+                        ),
             ),
           ],
         ),
@@ -183,14 +209,7 @@ class _TransactionsScreenState extends State<TransactionsScreen> {
 
   Widget _buildTransactionItemRow(_TransactionItemData item) {
     return InkWell(
-      onTap: () {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
-            content: Text('${item.title}: ${item.amount} (${item.weight}) • 24K Certified'),
-            duration: const Duration(seconds: 1),
-          ),
-        );
-      },
+      onTap: () => _showInvoiceModal(context, item),
       borderRadius: BorderRadius.circular(12),
       child: Padding(
         padding: const EdgeInsets.symmetric(vertical: 6, horizontal: 4),
@@ -337,6 +356,121 @@ class _TransactionsScreenState extends State<TransactionsScreen> {
       child: Center(child: icon),
     );
   }
+
+  /// Official Digital GST Tax Invoice Modal (HSN 7108/7106)
+  void _showInvoiceModal(BuildContext context, _TransactionItemData item) async {
+    final invRes = await GoldenApiService.instance.getTransactionInvoice(item.orderId);
+    if (!context.mounted) return;
+
+    final invoice = invRes.data;
+
+    showModalBottomSheet(
+      context: context,
+      isScrollControlled: true,
+      backgroundColor: Colors.white,
+      shape: const RoundedRectangleBorder(
+        borderRadius: BorderRadius.vertical(top: Radius.circular(24)),
+      ),
+      builder: (ctx) {
+        return Container(
+          padding: const EdgeInsets.all(20),
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Row(
+                mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                children: [
+                  Row(
+                    children: const [
+                      Icon(Icons.receipt_long_rounded, color: Color(0xFF005953), size: 26),
+                      SizedBox(width: 8),
+                      Text(
+                        'Tax Invoice',
+                        style: TextStyle(fontSize: 18, fontWeight: FontWeight.w800),
+                      ),
+                    ],
+                  ),
+                  IconButton(
+                    icon: const Icon(Icons.close_rounded),
+                    onPressed: () => Navigator.pop(ctx),
+                  ),
+                ],
+              ),
+              const SizedBox(height: 12),
+              Container(
+                padding: const EdgeInsets.all(14),
+                decoration: BoxDecoration(
+                  color: const Color(0xFFF8FAFC),
+                  borderRadius: BorderRadius.circular(14),
+                  border: Border.all(color: const Color(0xFFE2E8F0)),
+                ),
+                child: Column(
+                  children: [
+                    _buildInvoiceRow('Invoice No.', invoice?.invoiceNumber ?? 'INV-${item.orderId}'),
+                    const Divider(height: 14),
+                    _buildInvoiceRow('Order ID', item.orderId),
+                    const Divider(height: 14),
+                    _buildInvoiceRow('Refiner HSN Code', invoice?.hsnCode ?? (item.type == 'Sell' ? '7106' : '7108')),
+                    const Divider(height: 14),
+                    _buildInvoiceRow('Seller GSTIN', invoice?.sellerGstin ?? '07AAAAA0000A1Z5'),
+                    const Divider(height: 14),
+                    _buildInvoiceRow('Taxable Base Amount', '₹${invoice?.taxableBaseAmount.toStringAsFixed(2) ?? '1,955.34'}'),
+                    const Divider(height: 14),
+                    _buildInvoiceRow('CGST (1.5%)', '₹${invoice?.cgstAmount.toStringAsFixed(2) ?? '29.33'}'),
+                    const Divider(height: 14),
+                    _buildInvoiceRow('SGST (1.5%)', '₹${invoice?.sgstAmount.toStringAsFixed(2) ?? '29.33'}'),
+                    const Divider(height: 14),
+                    _buildInvoiceRow(
+                      'Total Invoice Amount',
+                      '₹${invoice?.totalPayableAmount.toStringAsFixed(2) ?? item.amount}',
+                      isBold: true,
+                    ),
+                  ],
+                ),
+              ),
+              const SizedBox(height: 16),
+              Row(
+                children: const [
+                  Icon(Icons.verified_user_rounded, color: Color(0xFF10B981), size: 16),
+                  SizedBox(width: 6),
+                  Text(
+                    '100% Insured Brink\'s Global Vault Physical Allocation',
+                    style: TextStyle(fontSize: 11.5, color: Color(0xFF047857), fontWeight: FontWeight.w600),
+                  ),
+                ],
+              ),
+              const SizedBox(height: 16),
+            ],
+          ),
+        );
+      },
+    );
+  }
+
+  Widget _buildInvoiceRow(String label, String value, {bool isBold = false}) {
+    return Row(
+      mainAxisAlignment: MainAxisAlignment.spaceBetween,
+      children: [
+        Text(
+          label,
+          style: TextStyle(
+            fontSize: isBold ? 14 : 12.5,
+            color: isBold ? const Color(0xFF0F172A) : const Color(0xFF64748B),
+            fontWeight: isBold ? FontWeight.w800 : FontWeight.w500,
+          ),
+        ),
+        Text(
+          value,
+          style: TextStyle(
+            fontSize: isBold ? 15 : 13,
+            fontWeight: isBold ? FontWeight.w900 : FontWeight.w700,
+            color: isBold ? const Color(0xFF005953) : const Color(0xFF0F172A),
+          ),
+        ),
+      ],
+    );
+  }
 }
 
 enum _TxIconType {
@@ -348,6 +482,7 @@ enum _TxIconType {
 }
 
 class _TransactionItemData {
+  final String orderId;
   final String type;
   final String title;
   final String date;
@@ -357,6 +492,7 @@ class _TransactionItemData {
   final _TxIconType iconType;
 
   _TransactionItemData({
+    required this.orderId,
     required this.type,
     required this.title,
     required this.date,

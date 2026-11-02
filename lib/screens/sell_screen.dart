@@ -1,6 +1,11 @@
+import 'dart:async';
+
 import 'package:flutter/material.dart';
+import 'package:golden/core/models/rate_models.dart';
 import '../widgets/gold_3d_widgets.dart';
 import '../widgets/transaction_success_dialog.dart';
+import '../services/golden_api_service.dart';
+import '../core/models/order_models.dart';
 
 class SellScreen extends StatefulWidget {
   final bool initialIsGold;
@@ -19,25 +24,63 @@ class _SellScreenState extends State<SellScreen> {
   final bool _isQuantityMode = true; // true = Quantity (gm), false = Amount (₹)
   double _grams = 0.5000;
   final TextEditingController _inputController = TextEditingController(text: '0.5000');
+  SellCalculationModel? _liveSellCalc;
 
-  final double _goldSellingRate = 14102.30;
-  final double _silverSellingRate = 87.60;
+  double _goldMaxAvailableGrams = 0.0;
+  double _silverMaxAvailableGrams = 0.0;
+  String _bankName = 'Bank Account';
+  String _bankDetails = 'Checking verified bank account...';
 
-  final double _goldMaxAvailableGrams = 0.8452;
-  final double _silverMaxAvailableGrams = 35.5000;
-
-  double get _currentRate => _isGoldSelected ? _goldSellingRate : _silverSellingRate;
+  double get _currentRate => _liveSellCalc?.sellingRatePerGram ?? 0.0;
   double get _maxAvailableGrams => _isGoldSelected ? _goldMaxAvailableGrams : _silverMaxAvailableGrams;
-  double get _calculatedAmount => _grams * _currentRate;
+  double get _calculatedAmount => _liveSellCalc?.netPayoutAmount ?? (_grams * _currentRate);
+
+  StreamSubscription<LiveRatesData>? _rateSub;
 
   @override
   void initState() {
     super.initState();
     _isGoldSelected = widget.initialIsGold;
+    _updateSellCalculation();
+    _loadUserData();
+
+    _rateSub = GoldenApiService.instance.liveRateStream.listen((_) {
+      if (mounted) _updateSellCalculation();
+    });
+  }
+
+  void _loadUserData() async {
+    final userRes = await GoldenApiService.instance.getUserProfile();
+    if (mounted && userRes.data != null) {
+      setState(() {
+        _goldMaxAvailableGrams = userRes.data!.goldVaultBalanceGrams;
+        _silverMaxAvailableGrams = userRes.data!.silverVaultBalanceGrams;
+      });
+    }
+
+    final bankRes = await GoldenApiService.instance.getBankAccounts();
+    if (mounted && bankRes.data != null && bankRes.data!.isNotEmpty) {
+      final primary = bankRes.data!.first;
+      setState(() {
+        _bankName = primary.bankName;
+        _bankDetails = 'A/C ${primary.maskedAccountNumber} • Instant IMPS / UPI';
+      });
+    }
+  }
+
+  void _updateSellCalculation() async {
+    final res = await GoldenApiService.instance.calculateSellQuote(
+      metal: _isGoldSelected ? 'gold' : 'silver',
+      grams: _grams,
+    );
+    if (mounted && res.data != null) {
+      setState(() => _liveSellCalc = res.data);
+    }
   }
 
   @override
   void dispose() {
+    _rateSub?.cancel();
     _inputController.dispose();
     super.dispose();
   }
@@ -51,6 +94,7 @@ class _SellScreenState extends State<SellScreen> {
         _inputController.text = _formatCurrency(_calculatedAmount);
       }
     });
+    _updateSellCalculation();
   }
 
   void _onInputChanged(String val) {
@@ -65,6 +109,7 @@ class _SellScreenState extends State<SellScreen> {
           _grams = computedGrams.clamp(0.0, _maxAvailableGrams);
         }
       });
+      _updateSellCalculation();
     }
   }
 
@@ -274,6 +319,7 @@ class _SellScreenState extends State<SellScreen> {
                   _grams = 0.5000;
                   _inputController.text = '0.5000';
                 });
+                _updateSellCalculation();
               },
               child: AnimatedContainer(
                 duration: const Duration(milliseconds: 200),
@@ -331,6 +377,7 @@ class _SellScreenState extends State<SellScreen> {
                   _grams = 10.0000;
                   _inputController.text = '10.0000';
                 });
+                _updateSellCalculation();
               },
               child: AnimatedContainer(
                 duration: const Duration(milliseconds: 200),
@@ -690,25 +737,25 @@ class _SellScreenState extends State<SellScreen> {
           Expanded(
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
-              children: const [
+              children: [
                 Row(
                   children: [
                     Text(
-                      'HDFC Bank Account',
-                      style: TextStyle(
+                      _bankName,
+                      style: const TextStyle(
                         fontSize: 14,
                         fontWeight: FontWeight.w800,
                         color: Color(0xFF0F172A),
                       ),
                     ),
-                    SizedBox(width: 6),
-                    Icon(Icons.check_circle_rounded, size: 14, color: Color(0xFF10B981)),
+                    const SizedBox(width: 6),
+                    const Icon(Icons.check_circle_rounded, size: 14, color: Color(0xFF10B981)),
                   ],
                 ),
-                SizedBox(height: 2),
+                const SizedBox(height: 2),
                 Text(
-                  'A/C •••• 4219 • Instant IMPS / UPI',
-                  style: TextStyle(
+                  _bankDetails,
+                  style: const TextStyle(
                     fontSize: 11.5,
                     fontWeight: FontWeight.w500,
                     color: Color(0xFF64748B),
@@ -839,14 +886,25 @@ class _SellScreenState extends State<SellScreen> {
         width: double.infinity,
         height: 52,
         child: ElevatedButton(
-          onPressed: () {
+          onPressed: () async {
+            // Execute Sell & Instant IMPS Bank Withdrawal
+            final res = await GoldenApiService.instance.initiateSellOrder(
+              metal: _isGoldSelected ? 'gold' : 'silver',
+              grams: _grams,
+            );
+
+            if (!mounted) return;
+
+            final payoutAmount = res.data?.payoutAmount ?? _calculatedAmount;
+            final destination = res.data?.destinationAccount ?? (_bankDetails.isNotEmpty ? '$_bankName • $_bankDetails' : 'Primary Bank Account');
+
             TransactionSuccessDialog.showSellSuccess(
               context: context,
               isGold: _isGoldSelected,
               grams: _grams,
-              amount: _calculatedAmount,
+              amount: payoutAmount,
               ratePerGram: _currentRate,
-              bankAccount: 'HDFC Bank •••• 4219',
+              bankAccount: destination,
             );
           },
           style: ElevatedButton.styleFrom(

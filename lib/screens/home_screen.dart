@@ -1,3 +1,4 @@
+import 'dart:async';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'live_rates_screen.dart';
@@ -8,6 +9,9 @@ import '../widgets/home/home_arch_painters.dart';
 import '../widgets/home/home_bottom_section.dart';
 import 'discover_screen.dart';
 import 'gift_bullion_screen.dart';
+import '../services/golden_api_service.dart';
+import '../core/models/rate_models.dart';
+import '../core/models/portfolio_models.dart';
 
 class HomeScreen extends StatefulWidget {
   final String userName;
@@ -15,7 +19,7 @@ class HomeScreen extends StatefulWidget {
 
   const HomeScreen({
     super.key,
-    this.userName = 'Prince Kumar',
+    this.userName = 'Golden Member',
     this.phoneNumber,
   });
 
@@ -24,12 +28,32 @@ class HomeScreen extends StatefulWidget {
 }
 
 class _HomeScreenState extends State<HomeScreen> {
-  int _selectedBottomNavIndex = 0;
+  StreamSubscription<LiveRatesData>? _rateSub;
+  LiveRatesData? _liveRates;
+  PortfolioSummaryModel? _portfolio;
 
   @override
   void initState() {
     super.initState();
-    SystemChrome.setEnabledSystemUIMode(SystemUiMode.immersiveSticky);
+    SystemChrome.setEnabledSystemUIMode(SystemUiMode.edgeToEdge);
+    _initApiData();
+  }
+
+  void _initApiData() async {
+    _rateSub = GoldenApiService.instance.liveRateStream.listen((data) {
+      if (mounted) setState(() => _liveRates = data);
+    });
+
+    final portRes = await GoldenApiService.instance.getPortfolioSummary();
+    if (mounted && portRes.data != null) {
+      setState(() => _portfolio = portRes.data);
+    }
+  }
+
+  @override
+  void dispose() {
+    _rateSub?.cancel();
+    super.dispose();
   }
 
   @override
@@ -41,6 +65,8 @@ class _HomeScreenState extends State<HomeScreen> {
         statusBarBrightness: Brightness.light,
         systemNavigationBarColor: Colors.transparent,
         systemNavigationBarDividerColor: Colors.transparent,
+        systemNavigationBarIconBrightness: Brightness.dark,
+        systemNavigationBarContrastEnforced: false,
       ),
       child: Scaffold(
         backgroundColor: const Color(0xFFFEDE77),
@@ -91,13 +117,8 @@ class _HomeScreenState extends State<HomeScreen> {
             ),
 
             // Fixed Bottom Navigation Bar (Home [Active], Gulaks, Dashboard, Profile)
-            HomeBottomNav(
-              selectedIndex: _selectedBottomNavIndex,
-              onTabSelected: (index) {
-                setState(() {
-                  _selectedBottomNavIndex = index;
-                });
-              },
+            const HomeBottomNav(
+              selectedIndex: 0,
             ),
           ],
         ),
@@ -153,7 +174,7 @@ class _HomeScreenState extends State<HomeScreen> {
               MaterialPageRoute(
                 builder: (_) => ProfileScreen(
                   userName: widget.userName,
-                  phoneNumber: widget.phoneNumber ?? '+91 98765 43210',
+                  phoneNumber: widget.phoneNumber ?? '',
                 ),
               ),
             );
@@ -219,9 +240,11 @@ class _HomeScreenState extends State<HomeScreen> {
                   child: CustomPaint(painter: BroadcastWavePainter()),
                 ),
                 const SizedBox(width: 6),
-                const Text(
-                  '₹14,346.67/gm',
-                  style: TextStyle(
+                Text(
+                  _liveRates != null && _liveRates!.gold.buyPricePerGram > 0
+                      ? '₹${_liveRates!.gold.buyPricePerGram.toStringAsFixed(2)}/gm'
+                      : '--/gm',
+                  style: const TextStyle(
                     fontSize: 13,
                     fontWeight: FontWeight.w700,
                     color: Color(0xFF1E293B),
@@ -243,11 +266,7 @@ class _HomeScreenState extends State<HomeScreen> {
 
         // 3D Purple Gift Box Circle Button
         InkWell(
-          onTap: () {
-            Navigator.of(context).push(
-              MaterialPageRoute(builder: (_) => const GiftBullionScreen()),
-            );
-          },
+          onTap: () => _showRewardsSheet(context),
           borderRadius: BorderRadius.circular(20),
           child: Container(
             width: 40,
@@ -277,14 +296,7 @@ class _HomeScreenState extends State<HomeScreen> {
 
         // 3D Magenta Chat Speech Bubble Circle Button
         InkWell(
-          onTap: () {
-            ScaffoldMessenger.of(context).showSnackBar(
-              const SnackBar(
-                content: Text('💬 Support: 24/7 Dedicated Gold Advisor online'),
-                duration: Duration(seconds: 1),
-              ),
-            );
-          },
+          onTap: () => _showAdvisorSupportDialog(context),
           borderRadius: BorderRadius.circular(20),
           child: Container(
             width: 40,
@@ -313,13 +325,13 @@ class _HomeScreenState extends State<HomeScreen> {
     );
   }
 
-  /// Total Savings Hero Area with 3D Coin Podium Graphic
+ 
   Widget _buildHeroTotalSavings(BuildContext context) {
     return SizedBox(
       height: 154,
       child: Stack(
         children: [
-          // Left: Total Savings, ₹101, Gold Balance Badge
+         
           Positioned(
             left: 0,
             top: 4,
@@ -330,8 +342,8 @@ class _HomeScreenState extends State<HomeScreen> {
               children: [
                 Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
-                  children: const [
-                    Text(
+                  children: [
+                    const Text(
                       'Your Total Savings',
                       style: TextStyle(
                         fontSize: 13.5,
@@ -340,10 +352,12 @@ class _HomeScreenState extends State<HomeScreen> {
                         letterSpacing: -0.1,
                       ),
                     ),
-                    SizedBox(height: 2),
+                    const SizedBox(height: 2),
                     Text(
-                      '₹101',
-                      style: TextStyle(
+                      _portfolio != null
+                          ? '₹${_portfolio!.totalPortfolioValue.toStringAsFixed(0)}'
+                          : '₹0',
+                      style: const TextStyle(
                         fontSize: 38,
                         fontWeight: FontWeight.w800,
                         color: Color(0xFF0F172A),
@@ -383,9 +397,11 @@ class _HomeScreenState extends State<HomeScreen> {
                           fit: BoxFit.contain,
                         ),
                         const SizedBox(width: 6),
-                        const Text(
-                          '₹101 Gold Balance',
-                          style: TextStyle(
+                        Text(
+                          _portfolio != null
+                              ? '${_portfolio!.gold.grams.toStringAsFixed(4)}g Gold Balance'
+                              : '0.0000g Gold Balance',
+                          style: const TextStyle(
                             fontSize: 12.5,
                             fontWeight: FontWeight.w700,
                             color: Color(0xFF0F172A),
@@ -1078,6 +1094,194 @@ class _HomeScreenState extends State<HomeScreen> {
           ),
         ),
       ),
+    );
+  }
+
+  /// Rewards & Scratch Cards Modal Bottom Sheet
+  void _showRewardsSheet(BuildContext context) async {
+    final rewardsRes = await GoldenApiService.instance.getRewards();
+    if (!context.mounted) return;
+
+    final rewards = rewardsRes.data?.rewards ?? [];
+    showModalBottomSheet(
+      context: context,
+      backgroundColor: Colors.white,
+      shape: const RoundedRectangleBorder(
+        borderRadius: BorderRadius.vertical(top: Radius.circular(24)),
+      ),
+      builder: (ctx) {
+        return Padding(
+          padding: const EdgeInsets.all(20),
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Row(
+                mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                children: [
+                  const Text(
+                    '🎁 Unlocked Rewards & Gifts',
+                    style: TextStyle(
+                      fontSize: 18,
+                      fontWeight: FontWeight.w800,
+                      color: Color(0xFF0F172A),
+                    ),
+                  ),
+                  IconButton(
+                    icon: const Icon(Icons.close_rounded),
+                    onPressed: () => Navigator.pop(ctx),
+                  ),
+                ],
+              ),
+              const SizedBox(height: 6),
+              Text(
+                rewardsRes.data?.giftBoxNotice ?? 'Scratch cards active!',
+                style: const TextStyle(fontSize: 13, color: Color(0xFF64748B)),
+              ),
+              const SizedBox(height: 16),
+              ...rewards.map((r) => Container(
+                    margin: const EdgeInsets.only(bottom: 12),
+                    padding: const EdgeInsets.all(14),
+                    decoration: BoxDecoration(
+                      color: const Color(0xFFFEF3C7).withValues(alpha: 0.5),
+                      borderRadius: BorderRadius.circular(14),
+                      border: Border.all(color: const Color(0xFFFDE68A)),
+                    ),
+                    child: Row(
+                      children: [
+                        const Icon(Icons.card_giftcard_rounded, color: Color(0xFFD97706), size: 28),
+                        const SizedBox(width: 12),
+                        Expanded(
+                          child: Column(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            children: [
+                              Text(
+                                r.title,
+                                style: const TextStyle(fontWeight: FontWeight.w700, fontSize: 14.5),
+                              ),
+                              const SizedBox(height: 2),
+                              Text(
+                                r.rewardType == 'scratch_card'
+                                    ? 'Instant cash reward: ₹${r.amount.toInt()}'
+                                    : 'Bonus Gold: ${r.goldGrams}g free',
+                                style: const TextStyle(fontSize: 12, color: Color(0xFF78350F)),
+                              ),
+                            ],
+                          ),
+                        ),
+                        ElevatedButton(
+                          onPressed: () {
+                            Navigator.pop(ctx);
+                            ScaffoldMessenger.of(context).showSnackBar(
+                              SnackBar(content: Text('🎉 Claimed ${r.title}! Added to your wallet.')),
+                            );
+                          },
+                          style: ElevatedButton.styleFrom(
+                            backgroundColor: const Color(0xFF005953),
+                            foregroundColor: Colors.white,
+                            padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 8),
+                            shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
+                          ),
+                          child: const Text('Claim'),
+                        ),
+                      ],
+                    ),
+                  )),
+              const SizedBox(height: 12),
+            ],
+          ),
+        );
+      },
+    );
+  }
+
+  /// 24/7 Dedicated Gold Advisor Support Dialog
+  void _showAdvisorSupportDialog(BuildContext context) {
+    final subjectCtrl = TextEditingController(text: 'Inquiry regarding 24K Gold Coin delivery');
+    final messageCtrl = TextEditingController(text: 'What is the delivery timeline for 10g 24K gold coin to Delhi NCR?');
+
+    showDialog(
+      context: context,
+      builder: (ctx) {
+        return AlertDialog(
+          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
+          title: Row(
+            children: const [
+              Icon(Icons.support_agent_rounded, color: Color(0xFF005953), size: 28),
+              SizedBox(width: 10),
+              Text(
+                '24/7 Gold Advisor',
+                style: TextStyle(fontSize: 18, fontWeight: FontWeight.w800),
+              ),
+            ],
+          ),
+          content: SingleChildScrollView(
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                const Text(
+                  'Connected to institutional bullion specialists at Brink\'s vault.',
+                  style: TextStyle(fontSize: 12.5, color: Color(0xFF64748B)),
+                ),
+                const SizedBox(height: 14),
+                TextField(
+                  controller: subjectCtrl,
+                  decoration: InputDecoration(
+                    labelText: 'Subject',
+                    border: OutlineInputBorder(borderRadius: BorderRadius.circular(12)),
+                    contentPadding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
+                  ),
+                ),
+                const SizedBox(height: 12),
+                TextField(
+                  controller: messageCtrl,
+                  maxLines: 3,
+                  decoration: InputDecoration(
+                    labelText: 'Your Message',
+                    border: OutlineInputBorder(borderRadius: BorderRadius.circular(12)),
+                    contentPadding: const EdgeInsets.all(14),
+                  ),
+                ),
+              ],
+            ),
+          ),
+          actions: [
+            TextButton(
+              onPressed: () => Navigator.pop(ctx),
+              child: const Text('Cancel'),
+            ),
+            ElevatedButton(
+              onPressed: () async {
+                Navigator.pop(ctx);
+                final res = await GoldenApiService.instance.createSupportTicket(
+                  subject: subjectCtrl.text,
+                  message: messageCtrl.text,
+                  category: 'Vault & Delivery',
+                );
+
+                if (context.mounted) {
+                  ScaffoldMessenger.of(context).showSnackBar(
+                    SnackBar(
+                      content: Text(res.message.isNotEmpty
+                          ? res.message
+                          : 'Message sent! A 24/7 Gold Advisor will respond shortly.'),
+                      backgroundColor: const Color(0xFF005953),
+                      duration: const Duration(seconds: 4),
+                    ),
+                  );
+                }
+              },
+              style: ElevatedButton.styleFrom(
+                backgroundColor: const Color(0xFF005953),
+                foregroundColor: Colors.white,
+                shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
+              ),
+              child: const Text('Send Message'),
+            ),
+          ],
+        );
+      },
     );
   }
 }

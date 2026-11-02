@@ -1,9 +1,7 @@
 import 'dart:math' as math;
 import 'package:flutter/material.dart';
 
-/// -------------------------------------------------------------
-/// Reusable Segmented Switcher (Gold | Silver)
-/// -------------------------------------------------------------
+
 class GoldSilverSegmentedToggle extends StatelessWidget {
   final bool isGoldSelected;
   final ValueChanged<bool> onToggle;

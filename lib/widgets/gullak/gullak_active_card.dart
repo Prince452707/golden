@@ -1,18 +1,45 @@
 import 'package:flutter/material.dart';
+import '../../core/models/gullak_models.dart';
 import 'gullak_painters.dart';
 
 class GullakActiveCard extends StatelessWidget {
   final VoidCallback onCompleteSetup;
   final VoidCallback? onOptionsTap;
+  final GullakGoalModel? goal;
+  final String title;
+  final String savedAmount;
+  final double progressPercentage;
 
   const GullakActiveCard({
     super.key,
     required this.onCompleteSetup,
     this.onOptionsTap,
+    this.goal,
+    this.title = 'Savings Goal',
+    this.savedAmount = '₹0.00',
+    this.progressPercentage = 0.0,
   });
+
+  String get _displayTitle => goal?.title ?? title;
+
+  String get _displaySavedAmount {
+    if (goal != null) {
+      return '₹${goal!.savedAmount.toStringAsFixed(2)}';
+    }
+    return savedAmount;
+  }
+
+  double get _displayProgress {
+    if (goal != null) {
+      return goal!.progressPercentage;
+    }
+    return progressPercentage;
+  }
 
   @override
   Widget build(BuildContext context) {
+    final isSilver = goal?.categoryId.toLowerCase() == 'silver';
+
     return Container(
       width: double.infinity,
       decoration: BoxDecoration(
@@ -34,17 +61,22 @@ class GullakActiveCard extends StatelessWidget {
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          // Top Row: Digi Gold Pill + Three dots menu
+          // Top Row: Digi Gold/Silver Pill + Three dots menu
           Row(
             mainAxisAlignment: MainAxisAlignment.spaceBetween,
             children: [
               Container(
-                padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4.5),
+                padding:
+                    const EdgeInsets.symmetric(horizontal: 10, vertical: 4.5),
                 decoration: BoxDecoration(
-                  color: const Color(0xFFFEF3C7),
+                  color: isSilver
+                      ? const Color(0xFFF1F5F9)
+                      : const Color(0xFFFEF3C7),
                   borderRadius: BorderRadius.circular(12),
                   border: Border.all(
-                    color: const Color(0xFFFDE68A),
+                    color: isSilver
+                        ? const Color(0xFFE2E8F0)
+                        : const Color(0xFFFDE68A),
                     width: 0.8,
                   ),
                 ),
@@ -57,12 +89,14 @@ class GullakActiveCard extends StatelessWidget {
                       child: CustomPaint(painter: GoldIngotIconPainter()),
                     ),
                     const SizedBox(width: 5),
-                    const Text(
-                      'Digi Gold',
+                    Text(
+                      isSilver ? 'Digi Silver' : 'Digi Gold',
                       style: TextStyle(
                         fontSize: 11.5,
                         fontWeight: FontWeight.w700,
-                        color: Color(0xFF92400E),
+                        color: isSilver
+                            ? const Color(0xFF475569)
+                            : const Color(0xFF92400E),
                         letterSpacing: 0.1,
                       ),
                     ),
@@ -86,25 +120,25 @@ class GullakActiveCard extends StatelessWidget {
 
           const SizedBox(height: 12),
 
-          // Content Row: Daily Saving info + 3D Coins stack
+          // Content Row: Savings Goal info + 3D Coins stack
           Row(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
               Expanded(
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
-                  children: const [
+                  children: [
                     Text(
-                      'Daily Saving',
-                      style: TextStyle(
+                      _displayTitle,
+                      style: const TextStyle(
                         fontSize: 20,
                         fontWeight: FontWeight.w800,
                         color: Color(0xFF111827),
                         letterSpacing: -0.3,
                       ),
                     ),
-                    SizedBox(height: 8),
-                    Text(
+                    const SizedBox(height: 8),
+                    const Text(
                       'You Saved',
                       style: TextStyle(
                         fontSize: 12.5,
@@ -112,10 +146,10 @@ class GullakActiveCard extends StatelessWidget {
                         color: Color(0xFF6B7280),
                       ),
                     ),
-                    SizedBox(height: 2),
+                    const SizedBox(height: 2),
                     Text(
-                      '₹0',
-                      style: TextStyle(
+                      _displaySavedAmount,
+                      style: const TextStyle(
                         fontSize: 26,
                         fontWeight: FontWeight.w800,
                         color: Color(0xFF111827),
@@ -126,7 +160,7 @@ class GullakActiveCard extends StatelessWidget {
                 ),
               ),
 
-              // 3D Stack of Gold Coins (transparent background, NO three-dot menu)
+              // 3D Stack of Gold Coins
               SizedBox(
                 width: 110,
                 height: 84,
@@ -146,7 +180,7 @@ class GullakActiveCard extends StatelessWidget {
 
           const SizedBox(height: 14),
 
-          // Progress Bar with 0% indicator
+          // Progress Bar with dynamic percentage
           Row(
             children: [
               Expanded(
@@ -155,10 +189,10 @@ class GullakActiveCard extends StatelessWidget {
                   child: Container(
                     height: 6,
                     color: const Color(0xFFE5E7EB),
-                    child: Align(
+                    child: FractionallySizedBox(
                       alignment: Alignment.centerLeft,
+                      widthFactor: (_displayProgress / 100).clamp(0.0, 1.0),
                       child: Container(
-                        width: 0,
                         color: const Color(0xFF00897B),
                       ),
                     ),
@@ -166,9 +200,9 @@ class GullakActiveCard extends StatelessWidget {
                 ),
               ),
               const SizedBox(width: 10),
-              const Text(
-                '0%',
-                style: TextStyle(
+              Text(
+                '${_displayProgress.toInt()}%',
+                style: const TextStyle(
                   fontSize: 12,
                   fontWeight: FontWeight.w600,
                   color: Color(0xFF6B7280),
@@ -201,12 +235,12 @@ class GullakActiveCard extends StatelessWidget {
                 mainAxisAlignment: MainAxisAlignment.center,
                 children: [
                   Text(
-                    'Complete setup',
+                    'Complete Setup',
                     style: TextStyle(
-                      fontSize: 14.5,
+                      fontSize: 14,
                       fontWeight: FontWeight.w700,
                       color: Colors.white,
-                      letterSpacing: 0.1,
+                      letterSpacing: 0.2,
                     ),
                   ),
                   SizedBox(width: 6),
@@ -224,4 +258,3 @@ class GullakActiveCard extends StatelessWidget {
     );
   }
 }
-

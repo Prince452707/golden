@@ -2,13 +2,36 @@ import 'package:flutter/material.dart';
 import '../../screens/portfolio_screen.dart';
 import '../../screens/buy_screen.dart';
 import '../../screens/sell_screen.dart';
+import '../../services/golden_api_service.dart';
 import 'home_arch_painters.dart';
 
 class HomeTotalSavingsArchCard extends StatelessWidget {
-  const HomeTotalSavingsArchCard({super.key});
+  final double? totalSavings;
+  final double? gullakCash;
+
+  const HomeTotalSavingsArchCard({
+    super.key,
+    this.totalSavings,
+    this.gullakCash,
+  });
+
+  String _formatAmount(double val) {
+    if (val >= 10000000) {
+      return '₹${(val / 10000000).toStringAsFixed(2)} Cr';
+    } else if (val >= 100000) {
+      return '₹${(val / 100000).toStringAsFixed(2)} L';
+    } else if (val >= 1000) {
+      return '₹${val.toStringAsFixed(0).replaceAllMapped(RegExp(r'(\d+?)(?=(\d\d)+(\d)(?!\d))'), (m) => '${m[1]},')}';
+    }
+    return '₹${val.toStringAsFixed(val.truncateToDouble() == val ? 0 : 2)}';
+  }
 
   @override
   Widget build(BuildContext context) {
+    final user = GoldenApiService.instance.currentUser;
+    final liveTotalSavings = totalSavings ?? (user?.totalGoldInvestedAmount ?? 0.0);
+    final liveCash = gullakCash ?? (user?.gullakCashBalance ?? 0.0);
+
     return LayoutBuilder(
       builder: (context, constraints) {
         final cardWidth = constraints.maxWidth;
@@ -48,10 +71,10 @@ class HomeTotalSavingsArchCard extends StatelessWidget {
 
                     const SizedBox(height: 8),
 
-                    const Text(
-                      '₹101',
-                      style: TextStyle(
-                        fontSize: 52,
+                    Text(
+                      _formatAmount(liveTotalSavings),
+                      style: const TextStyle(
+                        fontSize: 48,
                         fontWeight: FontWeight.w900,
                         color: Color(0xFF1E293B),
                         letterSpacing: -1.2,
@@ -99,18 +122,18 @@ class HomeTotalSavingsArchCard extends StatelessWidget {
                             ),
                             const SizedBox(width: 9),
                             RichText(
-                              text: const TextSpan(
+                              text: TextSpan(
                                 children: [
                                   TextSpan(
-                                    text: '₹101 ',
-                                    style: TextStyle(
+                                    text: '${_formatAmount(liveCash)} ',
+                                    style: const TextStyle(
                                       fontSize: 16.5,
                                       fontWeight: FontWeight.w900,
                                       color: Color(0xFF0F172A),
                                       letterSpacing: -0.2,
                                     ),
                                   ),
-                                  TextSpan(
+                                  const TextSpan(
                                     text: 'Gullak Cash',
                                     style: TextStyle(
                                       fontSize: 16.5,

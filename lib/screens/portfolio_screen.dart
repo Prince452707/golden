@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'home_screen.dart';
 import '../widgets/gold_3d_widgets.dart';
 import '../widgets/gullak/gullak_bottom_nav.dart';
 import 'buy_screen.dart';
@@ -7,6 +8,8 @@ import 'live_rates_screen.dart';
 import 'price_history_screen.dart';
 import 'gullaks_screen.dart';
 import 'gullak_goals_screen.dart';
+import '../services/golden_api_service.dart';
+import '../core/models/portfolio_models.dart';
 
 class PortfolioScreen extends StatefulWidget {
   final bool initialIsGold;
@@ -23,114 +26,93 @@ class PortfolioScreen extends StatefulWidget {
 class _PortfolioScreenState extends State<PortfolioScreen> {
   late bool _isGoldSelected;
   String _selectedRange = '1M';
-
-  // Live Market Rates
-  final double _goldLiveRate = 14370.20;
-  final double _silverLiveRate = 92.14;
-
-  // Gold Holdings Data
-  final double _goldGrams = 0.8474;
-  final double _goldInvested = 10500.00;
-  double get _goldCurrentValue => _goldGrams * _goldLiveRate;
-  double get _goldGain => _goldCurrentValue - _goldInvested;
-  double get _goldGainPct => (_goldGain / _goldInvested) * 100;
-  double get _goldAvgPrice => _goldInvested / _goldGrams;
-
-  // Silver Holdings Data
-  final double _silverGrams = 35.5000;
-  final double _silverInvested = 2800.00;
-  double get _silverCurrentValue => _silverGrams * _silverLiveRate;
-  double get _silverGain => _silverCurrentValue - _silverInvested;
-  double get _silverGainPct => (_silverGain / _silverInvested) * 100;
-  double get _silverAvgPrice => _silverInvested / _silverGrams;
-
-  // Total Combined Portfolio
-  double get _totalPortfolioValue => _goldCurrentValue + _silverCurrentValue;
-  double get _totalInvested => _goldInvested + _silverInvested;
-  double get _totalGain => _totalPortfolioValue - _totalInvested;
-  double get _totalGainPct => (_totalGain / _totalInvested) * 100;
-
-  final List<double> _goldChartPoints = [
-    11500, 11620, 11480, 11750, 11600, 11890, 11780, 12050, 11980, 12177.31
-  ];
-
-  final List<double> _silverChartPoints = [
-    2750, 2820, 2790, 2890, 2950, 3020, 3110, 3180, 3210, 3270.97
-  ];
-
-  // Goals allocation breakdown for Gold
-  final List<Map<String, dynamic>> _goldGoalAllocations = [
-    {
-      'title': 'Daily Saving',
-      'subtitle': 'Daily Auto-Save Goal',
-      'grams': 0.3000,
-      'targetAmount': 10000.0,
-      'savedAmount': 4311.06,
-      'asset': 'assets/clean_coins_stack.png',
-      'tag': 'Active Daily',
-      'tagColor': Color(0xFF00897B),
-    },
-    {
-      'title': 'Dream House',
-      'subtitle': 'Long Term Home Goal',
-      'grams': 0.3500,
-      'targetAmount': 500000.0,
-      'savedAmount': 5029.57,
-      'asset': 'assets/clean_house.png',
-      'tag': 'Target: 2028',
-      'tagColor': Color(0xFF6366F1),
-    },
-    {
-      'title': 'Perfect Wedding',
-      'subtitle': 'Wedding Gold Savings',
-      'grams': 0.1300,
-      'targetAmount': 200000.0,
-      'savedAmount': 1868.13,
-      'asset': 'assets/clean_wedding.png',
-      'tag': 'Target: 2026',
-      'tagColor': Color(0xFFEC4899),
-    },
-    {
-      'title': 'Flexible (Free) Gold',
-      'subtitle': 'Unallocated • Ready to withdraw or move',
-      'grams': 0.0674,
-      'targetAmount': 0.0,
-      'savedAmount': 968.58,
-      'asset': null,
-      'tag': 'Free Gold',
-      'tagColor': Color(0xFFD97706),
-    },
-  ];
-
-  // Goals allocation breakdown for Silver
-  final List<Map<String, dynamic>> _silverGoalAllocations = [
-    {
-      'title': 'Silver Coins & Bars',
-      'subtitle': 'Physical Pure Silver reserve',
-      'grams': 25.0000,
-      'targetAmount': 4607.0,
-      'savedAmount': 2303.50,
-      'asset': null,
-      'tag': '50% of 50g',
-      'tagColor': Color(0xFF475569),
-    },
-    {
-      'title': 'Festive Gifting Silver',
-      'subtitle': 'Silver coins for family & festivals',
-      'grams': 10.5000,
-      'targetAmount': 1842.0,
-      'savedAmount': 967.47,
-      'asset': 'assets/clean_gift.png',
-      'tag': 'Festive',
-      'tagColor': Color(0xFFB45309),
-    },
-  ];
+  PortfolioSummaryModel? _portfolioSummary;
 
   @override
   void initState() {
     super.initState();
     _isGoldSelected = widget.initialIsGold;
+    _fetchPortfolio();
   }
+
+  void _fetchPortfolio() async {
+    final res = await GoldenApiService.instance.getPortfolioSummary();
+    if (mounted && res.data != null) {
+      setState(() => _portfolioSummary = res.data);
+    }
+
+    final goalsRes = await GoldenApiService.instance.getUserGoals();
+    if (mounted && goalsRes.data != null) {
+      setState(() {
+        _goldGoalAllocations.clear();
+        for (final g in goalsRes.data!.goals) {
+          _goldGoalAllocations.add({
+            'title': g.title,
+            'subtitle': '${g.frequency} Auto-Save Goal',
+            'grams': g.savedGrams,
+            'targetAmount': g.targetAmount,
+            'savedAmount': g.savedAmount,
+            'asset': null,
+            'tag': 'Active',
+            'tagColor': const Color(0xFF00897B),
+          });
+        }
+      });
+    }
+
+    _loadHistory(_isGoldSelected, _selectedRange);
+  }
+
+  void _loadHistory(bool isGold, String range) async {
+    final histRes = await GoldenApiService.instance.getPriceHistory(
+      metal: isGold ? 'gold' : 'silver',
+      range: range,
+    );
+    if (mounted && histRes.data != null && histRes.data!.points.isNotEmpty) {
+      setState(() {
+        if (isGold) {
+          _goldChartPoints = histRes.data!.points.map((p) => p.price).toList();
+        } else {
+          _silverChartPoints = histRes.data!.points.map((p) => p.price).toList();
+        }
+      });
+    }
+  }
+
+  // Live Market Rates
+  double get _goldLiveRate => _portfolioSummary?.gold.liveRate ?? 0.0;
+  double get _silverLiveRate => _portfolioSummary?.silver.liveRate ?? 0.0;
+
+  // Gold Holdings Data
+  double get _goldGrams => _portfolioSummary?.gold.grams ?? 0.0;
+  double get _goldInvested => _portfolioSummary?.gold.investedAmount ?? 0.0;
+  double get _goldCurrentValue => _portfolioSummary?.gold.currentValue ?? (_goldGrams * _goldLiveRate);
+  double get _goldGain => _portfolioSummary?.gold.gainAmount ?? (_goldCurrentValue - _goldInvested);
+  double get _goldGainPct => (_goldInvested > 0) ? (_portfolioSummary?.gold.gainPercentage ?? ((_goldGain / _goldInvested) * 100)) : 0.0;
+  double get _goldAvgPrice => (_goldGrams > 0) ? (_portfolioSummary?.gold.averagePricePerGram ?? (_goldInvested / _goldGrams)) : 0.0;
+
+  // Silver Holdings Data
+  double get _silverGrams => _portfolioSummary?.silver.grams ?? 0.0;
+  double get _silverInvested => _portfolioSummary?.silver.investedAmount ?? 0.0;
+  double get _silverCurrentValue => _portfolioSummary?.silver.currentValue ?? (_silverGrams * _silverLiveRate);
+  double get _silverGain => _portfolioSummary?.silver.gainAmount ?? (_silverCurrentValue - _silverInvested);
+  double get _silverGainPct => (_silverInvested > 0) ? (_portfolioSummary?.silver.gainPercentage ?? ((_silverGain / _silverInvested) * 100)) : 0.0;
+  double get _silverAvgPrice => (_silverGrams > 0) ? (_portfolioSummary?.silver.averagePricePerGram ?? (_silverInvested / _silverGrams)) : 0.0;
+
+  // Total Combined Portfolio
+  double get _totalPortfolioValue => _portfolioSummary?.totalPortfolioValue ?? (_goldCurrentValue + _silverCurrentValue);
+  double get _totalInvested => _portfolioSummary?.totalInvested ?? (_goldInvested + _silverInvested);
+  double get _totalGain => _portfolioSummary?.totalGain ?? (_totalPortfolioValue - _totalInvested);
+  double get _totalGainPct => (_totalInvested > 0) ? (_portfolioSummary?.totalGainPercentage ?? ((_totalGain / _totalInvested) * 100)) : 0.0;
+
+  List<double> _goldChartPoints = [];
+  List<double> _silverChartPoints = [];
+
+  // Goals allocation breakdown for Gold
+  final List<Map<String, dynamic>> _goldGoalAllocations = [];
+
+  // Goals allocation breakdown for Silver
+  final List<Map<String, dynamic>> _silverGoalAllocations = [];
 
   String _formatCurrency(double val) {
     return '₹${val.toStringAsFixed(2).replaceAllMapped(
@@ -141,64 +123,78 @@ class _PortfolioScreenState extends State<PortfolioScreen> {
 
   @override
   Widget build(BuildContext context) {
-    return Scaffold(
-      backgroundColor: const Color(0xFFF8FAFC),
-      body: SafeArea(
-        bottom: false,
-        child: Column(
-          children: [
-            // App Bar: Back Arrow + "My Portfolio"
-            _buildAppBar(),
+    return PopScope(
+      canPop: false,
+      onPopInvokedWithResult: (didPop, _) {
+        if (!didPop) {
+          Navigator.of(context).pushReplacement(
+            PageRouteBuilder(
+              pageBuilder: (_, __, ___) => const HomeScreen(),
+              transitionDuration: Duration.zero,
+            ),
+          );
+        }
+      },
+      child: Scaffold(
+        backgroundColor: const Color(0xFFF8FAFC),
+        body: SafeArea(
+          bottom: false,
+          child: Column(
+            children: [
+              // App Bar: Back Arrow + "My Portfolio"
+              _buildAppBar(),
 
-            Expanded(
-              child: SingleChildScrollView(
-                physics: const BouncingScrollPhysics(),
-                padding: const EdgeInsets.fromLTRB(16, 6, 16, 24),
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    // 1. Total Combined Portfolio Value Card
-                    _buildTotalPortfolioCard(),
+              Expanded(
+                child: SingleChildScrollView(
+                  physics: const BouncingScrollPhysics(),
+                  padding: const EdgeInsets.fromLTRB(16, 6, 16, 24),
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      // 1. Total Combined Portfolio Value Card
+                      _buildTotalPortfolioCard(),
 
-                    const SizedBox(height: 14),
+                      const SizedBox(height: 14),
 
-                    // 2. High-Visibility "Buy Gold" & "Buy Silver" Action Buttons
-                    _buildQuickBuySection(),
+                      // 2. High-Visibility "Buy Gold" & "Buy Silver" Action Buttons
+                      _buildQuickBuySection(),
 
-                    const SizedBox(height: 16),
+                      const SizedBox(height: 16),
 
-                    // 3. Asset Selector Toggle: Gold | Silver
-                    GoldSilverSegmentedToggle(
-                      isGoldSelected: _isGoldSelected,
-                      onToggle: (val) {
-                        setState(() {
-                          _isGoldSelected = val;
-                        });
-                      },
-                    ),
+                      // 3. Asset Selector Toggle: Gold | Silver
+                      GoldSilverSegmentedToggle(
+                        isGoldSelected: _isGoldSelected,
+                        onToggle: (val) {
+                          setState(() {
+                            _isGoldSelected = val;
+                          });
+                          _loadHistory(val, _selectedRange);
+                        },
+                      ),
 
-                    const SizedBox(height: 16),
+                      const SizedBox(height: 16),
 
-                    // 4. Detailed Metal Holdings Card with Live Quantity, Invested, Return & Chart
-                    _buildHoldingsCard(),
+                      // 4. Detailed Metal Holdings Card with Live Quantity, Invested, Return & Chart
+                      _buildHoldingsCard(),
 
-                    const SizedBox(height: 22),
+                      const SizedBox(height: 22),
 
-                    // 5. Holdings by Goal Section (The Goal Allocations requested by user)
-                    _buildHoldingsByGoalSection(),
+                      // 5. Holdings by Goal Section (The Goal Allocations requested by user)
+                      _buildHoldingsByGoalSection(),
 
-                    const SizedBox(height: 20),
+                      const SizedBox(height: 20),
 
-                    // 6. View Full Price History Button
-                    _buildPriceHistoryButton(),
-                  ],
+                      // 6. View Full Price History Button
+                      _buildPriceHistoryButton(),
+                    ],
+                  ),
                 ),
               ),
-            ),
 
-            // Pinned 4-Tab Bottom Navigation Bar (Dashboard selected - index 2)
-            const GullakBottomNav(selectedIndex: 2),
-          ],
+              // Pinned 4-Tab Bottom Navigation Bar (Dashboard selected - index 2)
+              const GullakBottomNav(selectedIndex: 2),
+            ],
+          ),
         ),
       ),
     );
@@ -214,9 +210,12 @@ class _PortfolioScreenState extends State<PortfolioScreen> {
             alignment: Alignment.centerLeft,
             child: InkWell(
               onTap: () {
-                if (Navigator.canPop(context)) {
-                  Navigator.pop(context);
-                }
+                Navigator.of(context).pushReplacement(
+                  PageRouteBuilder(
+                    pageBuilder: (_, __, ___) => const HomeScreen(),
+                    transitionDuration: Duration.zero,
+                  ),
+                );
               },
               borderRadius: BorderRadius.circular(20),
               child: Container(
@@ -615,7 +614,7 @@ class _PortfolioScreenState extends State<PortfolioScreen> {
 
         const SizedBox(height: 8),
 
-        // Quick Withdraw / Sell link
+       
         Row(
           mainAxisAlignment: MainAxisAlignment.end,
           children: [
@@ -753,6 +752,7 @@ class _PortfolioScreenState extends State<PortfolioScreen> {
               setState(() {
                 _selectedRange = val;
               });
+              _loadHistory(_isGoldSelected, val);
             },
           ),
         ],

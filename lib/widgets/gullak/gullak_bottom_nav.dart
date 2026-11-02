@@ -22,73 +22,31 @@ class GullakBottomNav extends StatelessWidget {
       onTabSelected!(targetIndex);
     }
 
+    Widget destination;
     switch (targetIndex) {
-      case 0: // Home
-        if (Navigator.of(context).canPop()) {
-          Navigator.of(context).popUntil((route) => route.isFirst);
-        } else {
-          Navigator.of(context).pushReplacement(
-            PageRouteBuilder(
-              pageBuilder: (context, animation, secondaryAnimation) => const HomeScreen(),
-              transitionDuration: Duration.zero,
-            ),
-          );
-        }
+      case 0:
+        destination = const HomeScreen();
         break;
-
-      case 1: // Gullaks
-        if (selectedIndex == 0) {
-          Navigator.of(context).push(
-            MaterialPageRoute(builder: (_) => const GullaksScreen()),
-          );
-        } else {
-          Navigator.of(context).pushReplacement(
-            PageRouteBuilder(
-              pageBuilder: (context, animation, secondaryAnimation) => const GullaksScreen(),
-              transitionDuration: Duration.zero,
-            ),
-          );
-        }
+      case 1:
+        destination = const GullaksScreen();
         break;
-
-      case 2: // Dashboard (Portfolio)
-        if (selectedIndex == 0) {
-          Navigator.of(context).push(
-            MaterialPageRoute(builder: (_) => const PortfolioScreen()),
-          );
-        } else {
-          Navigator.of(context).pushReplacement(
-            PageRouteBuilder(
-              pageBuilder: (context, animation, secondaryAnimation) => const PortfolioScreen(),
-              transitionDuration: Duration.zero,
-            ),
-          );
-        }
+      case 2:
+        destination = const PortfolioScreen();
         break;
-
-      case 3: // Profile
-        if (selectedIndex == 0) {
-          Navigator.of(context).push(
-            MaterialPageRoute(
-              builder: (_) => const ProfileScreen(
-                userName: 'Prince Kumar',
-                phoneNumber: '+91 98765 43210',
-              ),
-            ),
-          );
-        } else {
-          Navigator.of(context).pushReplacement(
-            PageRouteBuilder(
-              pageBuilder: (context, animation, secondaryAnimation) => const ProfileScreen(
-                userName: 'Prince Kumar',
-                phoneNumber: '+91 98765 43210',
-              ),
-              transitionDuration: Duration.zero,
-            ),
-          );
-        }
+      case 3:
+        destination = const ProfileScreen();
         break;
+      default:
+        destination = const HomeScreen();
     }
+
+    Navigator.of(context).pushReplacement(
+      PageRouteBuilder(
+        pageBuilder: (context, animation, secondaryAnimation) => destination,
+        transitionDuration: Duration.zero,
+        reverseTransitionDuration: Duration.zero,
+      ),
+    );
   }
 
   @override

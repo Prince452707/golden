@@ -1,9 +1,9 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
-import 'country_picker_modal.dart';
+import 'package:country_code_picker/country_code_picker.dart';
 
 class PhoneInputCard extends StatefulWidget {
-  final Function(Country country, String phone) onSubmit;
+  final Function(CountryCode country, String phone) onSubmit;
   final bool isLoading;
   final String? initialPhone;
   final String? initialCountryCode;
@@ -23,20 +23,24 @@ class PhoneInputCard extends StatefulWidget {
 class _PhoneInputCardState extends State<PhoneInputCard> {
   final TextEditingController _phoneController = TextEditingController();
   final FocusNode _focusNode = FocusNode();
-  Country _selectedCountry = supportedCountries.first;
+  CountryCode _selectedCountry = CountryCode(
+    name: 'India',
+    code: 'IN',
+    dialCode: '+91',
+  );
   bool _isFocused = false;
   String? _errorMessage;
 
   @override
   void initState() {
     super.initState();
-    if (widget.initialCountryCode != null) {
-      final found = supportedCountries.where(
-        (c) => c.code == widget.initialCountryCode,
+    if (widget.initialCountryCode != null &&
+        widget.initialCountryCode!.isNotEmpty) {
+      final code = widget.initialCountryCode!;
+      _selectedCountry = CountryCode(
+        dialCode: code.startsWith('+') ? code : '+$code',
+        code: code.replaceAll('+', ''),
       );
-      if (found.isNotEmpty) {
-        _selectedCountry = found.first;
-      }
     }
     if (widget.initialPhone != null && widget.initialPhone!.isNotEmpty) {
       _phoneController.text = _formatPhoneNumber(widget.initialPhone!);
@@ -69,15 +73,27 @@ class _PhoneInputCardState extends State<PhoneInputCard> {
 
   String get _rawNumber => _phoneController.text.replaceAll(' ', '');
 
-  bool get _isValid => _rawNumber.length == _selectedCountry.maxLength;
+  bool get _isValid {
+    final clean = _rawNumber;
+    if (clean.isEmpty) return false;
+    final dial = _selectedCountry.dialCode ?? '+91';
+    if (dial == '+91') {
+      return clean.length == 10;
+    }
+    return clean.length >= 7 && clean.length <= 15;
+  }
 
   void _handleSubmit() {
     if (widget.isLoading) return;
 
     if (!_isValid) {
       setState(() {
-        _errorMessage =
-            'Please enter a valid ${_selectedCountry.maxLength}-digit mobile number';
+        final dial = _selectedCountry.dialCode ?? '+91';
+        if (dial == '+91') {
+          _errorMessage = 'Please enter a valid 10-digit mobile number';
+        } else {
+          _errorMessage = 'Please enter a valid mobile number (7-15 digits)';
+        }
       });
       return;
     }
@@ -107,13 +123,20 @@ class _PhoneInputCardState extends State<PhoneInputCard> {
               child: Container(
                 width: 44,
                 height: 4,
-                decoration: BoxDecoration(color: Colors.grey.shade300, borderRadius: BorderRadius.circular(2)),
+                decoration: BoxDecoration(
+                  color: Colors.grey.shade300,
+                  borderRadius: BorderRadius.circular(2),
+                ),
               ),
             ),
             const SizedBox(height: 20),
             const Text(
               'Terms and Conditions',
-              style: TextStyle(fontSize: 20, fontWeight: FontWeight.bold, color: Color(0xFF0F172A)),
+              style: TextStyle(
+                fontSize: 20,
+                fontWeight: FontWeight.bold,
+                color: Color(0xFF0F172A),
+              ),
             ),
             const SizedBox(height: 14),
             Expanded(
@@ -124,7 +147,11 @@ class _PhoneInputCardState extends State<PhoneInputCard> {
                   '2. Account Security: Never share your one-time password (OTP) with anyone. Support staff will never ask for your verification code.\n\n'
                   '3. Liquidity: Buy, sell, or request physical door-step delivery anytime at live transparent market rates.\n\n'
                   '4. Privacy: We safeguard your private data using banking-grade AES-256 encryption.',
-                  style: TextStyle(fontSize: 14, height: 1.6, color: Colors.grey.shade700),
+                  style: TextStyle(
+                    fontSize: 14,
+                    height: 1.6,
+                    color: Colors.grey.shade700,
+                  ),
                 ),
               ),
             ),
@@ -137,7 +164,9 @@ class _PhoneInputCardState extends State<PhoneInputCard> {
                 style: ElevatedButton.styleFrom(
                   backgroundColor: const Color(0xFF00AAA1),
                   foregroundColor: Colors.white,
-                  shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(24)),
+                  shape: RoundedRectangleBorder(
+                    borderRadius: BorderRadius.circular(24),
+                  ),
                 ),
                 child: const Text('I Understand'),
               ),
@@ -234,50 +263,130 @@ class _PhoneInputCardState extends State<PhoneInputCard> {
           child: Row(
             crossAxisAlignment: CrossAxisAlignment.center,
             children: [
-              // Country Selector Chip
-              InkWell(
-                onTap: () async {
-                  final picked = await CountryPickerModal.show(
-                    context,
-                    _selectedCountry,
-                  );
-                  if (picked != null) {
-                    setState(() {
-                      _selectedCountry = picked;
-                      _errorMessage = null;
-                    });
+              // Country Code Picker with international catalog
+              CountryCodePicker(
+                onChanged: (country) {
+                  setState(() {
+                    _selectedCountry = country;
+                    _errorMessage = null;
+                  });
+                },
+                onInit: (country) {
+                  if (country != null) {
+                    _selectedCountry = country;
                   }
                 },
-                borderRadius: const BorderRadius.horizontal(
-                  left: Radius.circular(14),
+                initialSelection: widget.initialCountryCode ?? '+91',
+                favorite: const [
+                  '+91',
+                  'IN',
+                  '+971',
+                  'AE',
+                  '+1',
+                  'US',
+                  '+44',
+                  'GB',
+                  '+65',
+                  'SG',
+                ],
+                showCountryOnly: false,
+                showOnlyCountryWhenClosed: false,
+                alignLeft: false,
+                pickerStyle: PickerStyle.bottomSheet,
+                boxDecoration: const BoxDecoration(
+                  color: Colors.white,
+                  borderRadius: BorderRadius.vertical(top: Radius.circular(24)),
                 ),
-                child: Padding(
-                  padding: const EdgeInsets.symmetric(horizontal: 12),
-                  child: Row(
-                    mainAxisSize: MainAxisSize.min,
-                    children: [
-                      Text(
-                        _selectedCountry.flag,
-                        style: const TextStyle(fontSize: 22),
-                      ),
-                      const SizedBox(width: 8),
-                      Text(
-                        _selectedCountry.code,
-                        style: const TextStyle(
-                          fontSize: 16,
-                          fontWeight: FontWeight.w800,
-                          color: Color(0xFF0F172A),
-                        ),
-                      ),
-                      const SizedBox(width: 4),
-                      const Icon(
-                        Icons.keyboard_arrow_down_rounded,
-                        size: 18,
-                        color: Color(0xFF64748B),
-                      ),
-                    ],
+                searchDecoration: InputDecoration(
+                  hintText: 'Search country or code...',
+                  hintStyle: const TextStyle(
+                    fontSize: 14,
+                    color: Color(0xFF94A3B8),
+                  ),
+                  prefixIcon: const Icon(
+                    Icons.search,
+                    color: Color(0xFF00AAA1),
+                    size: 20,
+                  ),
+                  filled: true,
+                  fillColor: const Color(0xFFF8FAFC),
+                  contentPadding: const EdgeInsets.symmetric(
+                    horizontal: 14,
+                    vertical: 12,
+                  ),
+                  border: OutlineInputBorder(
+                    borderRadius: BorderRadius.circular(12),
+                    borderSide: const BorderSide(color: Color(0xFFE2E8F0)),
+                  ),
+                  enabledBorder: OutlineInputBorder(
+                    borderRadius: BorderRadius.circular(12),
+                    borderSide: const BorderSide(color: Color(0xFFE2E8F0)),
+                  ),
+                  focusedBorder: OutlineInputBorder(
+                    borderRadius: BorderRadius.circular(12),
+                    borderSide: const BorderSide(
+                      color: Color(0xFF00AAA1),
+                      width: 1.5,
+                    ),
                   ),
                 ),
+                searchStyle: const TextStyle(
+                  fontSize: 15,
+                  fontWeight: FontWeight.w600,
+                  color: Color(0xFF0F172A),
+                ),
+                dialogTextStyle: const TextStyle(
+                  fontSize: 15,
+                  fontWeight: FontWeight.w600,
+                  color: Color(0xFF0F172A),
+                ),
+                closeIcon: const Icon(
+                  Icons.close,
+                  color: Color(0xFF64748B),
+                  size: 22,
+                ),
+                builder: (countryCode) {
+                  final flagUri = countryCode?.flagUri;
+                  final dialCode = countryCode?.dialCode ?? '+91';
+                  return Padding(
+                    padding: const EdgeInsets.symmetric(horizontal: 12),
+                    child: Row(
+                      mainAxisSize: MainAxisSize.min,
+                      children: [
+                        if (flagUri != null)
+                          ClipRRect(
+                            borderRadius: BorderRadius.circular(3),
+                            child: Image.asset(
+                              flagUri,
+                              package: 'country_code_picker',
+                              width: 24,
+                              height: 16,
+                              fit: BoxFit.cover,
+                              errorBuilder: (_, _, _) => const Text(
+                                '🇮🇳',
+                                style: TextStyle(fontSize: 18),
+                              ),
+                            ),
+                          ),
+                        const SizedBox(width: 8),
+                        Text(
+                          dialCode,
+                          style: const TextStyle(
+                            fontSize: 16,
+                            fontWeight: FontWeight.w800,
+                            color: Color(0xFF0F172A),
+                          ),
+                        ),
+                        const SizedBox(width: 4),
+                        const Icon(
+                          Icons.keyboard_arrow_down_rounded,
+                          size: 18,
+                          color: Color(0xFF64748B),
+                        ),
+                      ],
+                    ),
+                  );
+                },
               ),
 
               // Vertical Divider
@@ -304,7 +413,7 @@ class _PhoneInputCardState extends State<PhoneInputCard> {
                   inputFormatters: [
                     FilteringTextInputFormatter.digitsOnly,
                     LengthLimitingTextInputFormatter(
-                      _selectedCountry.maxLength,
+                      _selectedCountry.dialCode == '+91' ? 10 : 15,
                     ),
                     _PhoneNumberFormatter(),
                   ],
@@ -332,7 +441,7 @@ class _PhoneInputCardState extends State<PhoneInputCard> {
                   onSubmitted: (_) => _handleSubmit(),
                 ),
               ),
-              
+
               if (_phoneController.text.isNotEmpty)
                 IconButton(
                   icon: const Icon(
@@ -368,7 +477,7 @@ class _PhoneInputCardState extends State<PhoneInputCard> {
 
         const SizedBox(height: 24),
 
-      
+        // Action CTA Button
         SizedBox(
           width: double.infinity,
           height: 52,
@@ -388,26 +497,23 @@ class _PhoneInputCardState extends State<PhoneInputCard> {
                     width: 22,
                     height: 22,
                     child: CircularProgressIndicator(
-                      color: Colors.white,
-                      strokeWidth: 2.5,
+                      strokeWidth: 2.2,
+                      valueColor: AlwaysStoppedAnimation<Color>(Colors.white),
                     ),
                   )
-                : Row(
+                : const Row(
                     mainAxisAlignment: MainAxisAlignment.center,
-                    children: const [
+                    children: [
                       Text(
-                        'Continue',
+                        'Get OTP',
                         style: TextStyle(
-                          fontSize: 16.5,
+                          fontSize: 16,
                           fontWeight: FontWeight.w700,
-                          letterSpacing: 0.4,
+                          letterSpacing: 0.3,
                         ),
                       ),
                       SizedBox(width: 8),
-                      Icon(
-                        Icons.arrow_forward_rounded,
-                        size: 18,
-                      ),
+                      Icon(Icons.arrow_forward_rounded, size: 18),
                     ],
                   ),
           ),
@@ -415,37 +521,20 @@ class _PhoneInputCardState extends State<PhoneInputCard> {
 
         const SizedBox(height: 14),
 
-        // Footer: Trust Marker + Terms
+        // Subtext / Terms & Conditions
         Row(
           mainAxisAlignment: MainAxisAlignment.center,
           children: [
-            const Icon(
-              Icons.shield_outlined,
-              size: 13,
-              color: Color(0xFF64748B),
-            ),
-            const SizedBox(width: 5),
             const Text(
-              '100% Secure & Insured',
+              'By proceeding, you agree to our ',
               style: TextStyle(
-                fontSize: 11.5,
-                fontWeight: FontWeight.w500,
+                fontSize: 12,
+                fontWeight: FontWeight.w400,
                 color: Color(0xFF64748B),
               ),
             ),
-            const SizedBox(width: 8),
-            Container(
-              width: 3,
-              height: 3,
-              decoration: const BoxDecoration(
-                shape: BoxShape.circle,
-                color: Color(0xFF94A3B8),
-              ),
-            ),
-            const SizedBox(width: 8),
-            InkWell(
+            GestureDetector(
               onTap: () => _showTermsDialog(context),
-              borderRadius: BorderRadius.circular(4),
               child: const Text(
                 'Terms and Conditions',
                 style: TextStyle(

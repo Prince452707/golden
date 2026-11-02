@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'gullak_models.dart';
+import '../../services/golden_api_service.dart';
 
 class GullakSetupModal extends StatefulWidget {
   final GullakGoal goal;
@@ -356,8 +357,17 @@ class _GullakSetupModalState extends State<GullakSetupModal> {
 
           // Primary CTA Button: Proceed to Pay & Start Gullak
           InkWell(
-            onTap: () {
+            onTap: () async {
               Navigator.of(context).pop();
+              await GoldenApiService.instance.createGullakGoal(
+                title: widget.goal.title,
+                targetAmount: _targetAmount,
+                categoryId: widget.goal.id,
+                frequency: _frequencies[_selectedFrequencyIndex],
+                initialDeposit: _initialDeposit,
+                autoDebitEnabled: true,
+                autoDebitAmount: _initialDeposit,
+              );
               if (widget.onProceedToPayment != null) {
                 widget.onProceedToPayment!(
                   _initialDeposit,

@@ -1,5 +1,7 @@
 import 'package:flutter/material.dart';
 import '../widgets/gold_3d_widgets.dart';
+import '../services/golden_api_service.dart';
+import '../core/models/rate_models.dart';
 
 class PriceHistoryScreen extends StatefulWidget {
   const PriceHistoryScreen({super.key});
@@ -10,12 +12,28 @@ class PriceHistoryScreen extends StatefulWidget {
 
 class _PriceHistoryScreenState extends State<PriceHistoryScreen> {
   String _selectedRange = '6M';
+  PriceHistoryModel? _historyData;
 
-  // Points representing the 6-month historical trajectory matching screenshot
-  // High ~15,500, dip to ~12,860 at point 3 (15 Aug 2026), rising to ~14,370
-  final List<double> _historyPoints = [
-    13800, 14950, 15500, 13400, 12860, 13600, 14200, 15100, 14700, 14370.20
-  ];
+  @override
+  void initState() {
+    super.initState();
+    _fetchHistory('6M');
+  }
+
+  void _fetchHistory(String range) async {
+    final res = await GoldenApiService.instance.getPriceHistory(
+      metal: 'gold',
+      range: range,
+    );
+    if (mounted && res.data != null) {
+      setState(() => _historyData = res.data);
+    }
+  }
+
+  // Points representing the historical trajectory matching specification
+  List<double> get _historyPoints => _historyData != null && _historyData!.points.isNotEmpty
+      ? _historyData!.points.map((p) => p.price).toList()
+      : <double>[];
 
   @override
   Widget build(BuildContext context) {
@@ -81,6 +99,7 @@ class _PriceHistoryScreenState extends State<PriceHistoryScreen> {
                         setState(() {
                           _selectedRange = val;
                         });
+                        _fetchHistory(val);
                       },
                     ),
 
@@ -225,6 +244,20 @@ class _PriceHistoryScreenState extends State<PriceHistoryScreen> {
   }
 
   Widget _buildDetailedHistoryChart() {
+    final points = _historyPoints;
+    final lowStr = _historyData != null && _historyData!.lowPrice > 0
+        ? '₹${_historyData!.lowPrice.toStringAsFixed(0)}'
+        : '';
+    final dateStr = _historyData?.timeframe ?? '';
+
+    List<String> yLabels = const [];
+    if (points.isNotEmpty) {
+      final max = points.reduce((a, b) => a > b ? a : b);
+      final min = points.reduce((a, b) => a < b ? a : b);
+      final step = (max - min) / 4;
+      yLabels = List.generate(5, (i) => (max - i * step).toStringAsFixed(0));
+    }
+
     return Container(
       height: 220,
       width: double.infinity,
@@ -241,19 +274,33 @@ class _PriceHistoryScreenState extends State<PriceHistoryScreen> {
         ],
       ),
       padding: const EdgeInsets.fromLTRB(10, 16, 16, 12),
-      child: CustomPaint(
-        painter: _HistoryChartWithAxisPainter(
-          points: _historyPoints,
-          yLabels: const ['16,000', '15,000', '14,000', '13,000', '12,000'],
-          tooltipIndex: 4, // pointing at ₹12,860 on 15 Aug 2026
-          tooltipPrice: '₹12,860',
-          tooltipDate: '15 Aug 2026',
-        ),
-      ),
+      child: points.isEmpty
+          ? const Center(
+              child: CircularProgressIndicator(color: Color(0xFF005953)),
+            )
+          : CustomPaint(
+              painter: _HistoryChartWithAxisPainter(
+                points: points,
+                yLabels: yLabels,
+                tooltipIndex: points.length ~/ 2,
+                tooltipPrice: lowStr,
+                tooltipDate: dateStr,
+              ),
+            ),
     );
   }
 
   Widget _buildPriceDetailsTable() {
+    final high = _historyData != null && _historyData!.highPrice > 0
+        ? '₹${_historyData!.highPrice.toStringAsFixed(2)}'
+        : '--';
+    final low = _historyData != null && _historyData!.lowPrice > 0
+        ? '₹${_historyData!.lowPrice.toStringAsFixed(2)}'
+        : '--';
+    final avg = _historyData != null && _historyData!.avgPrice > 0
+        ? '₹${_historyData!.avgPrice.toStringAsFixed(2)}'
+        : '--';
+
     return Container(
       decoration: BoxDecoration(
         color: Colors.white,
@@ -263,11 +310,11 @@ class _PriceHistoryScreenState extends State<PriceHistoryScreen> {
       padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
       child: Column(
         children: [
-          _buildRow('Highest Price', '₹15,720.40'),
+          _buildRow('Highest Price', high),
           const Divider(height: 18, color: Color(0xFFF1F5F9)),
-          _buildRow('Lowest Price', '₹12,480.30'),
+          _buildRow('Lowest Price', low),
           const Divider(height: 18, color: Color(0xFFF1F5F9)),
-          _buildRow('Average Price', '₹13,984.60'),
+          _buildRow('Average Price', avg),
         ],
       ),
     );
@@ -347,10 +394,12 @@ class _HistoryChartWithAxisPainter extends CustomPainter {
       canvas.drawLine(Offset(leftMargin, y), Offset(size.width, y), gridPaint);
     }
 
-    // Chart curve mapping (12000 to 16000)
-    const minVal = 12000.0;
-    const maxVal = 16000.0;
-    final range = maxVal - minVal;
+    if (points.isEmpty || points.length < 2) return;
+
+    // Dynamic curve mapping
+    final double minVal = points.reduce((a, b) => a < b ? a : b) * 0.98;
+    final double maxVal = points.reduce((a, b) => a > b ? a : b) * 1.02;
+    final range = (maxVal - minVal) > 0 ? (maxVal - minVal) : 1.0;
 
     final offsets = <Offset>[];
     final dx = chartWidth / (points.length - 1);

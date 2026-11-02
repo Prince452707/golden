@@ -1,6 +1,7 @@
 import 'dart:async';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
+import '../services/golden_api_service.dart';
 
 class OtpVerificationView extends StatefulWidget {
   final String phoneNumber;
@@ -85,27 +86,37 @@ class _OtpVerificationViewState extends State<OtpVerificationView> {
       _errorMessage = null;
     });
 
-    await Future.delayed(const Duration(milliseconds: 750));
+    try {
+      final res = await GoldenApiService.instance.verifyOtp(
+        widget.phoneNumber,
+        otp,
+        countryCode: widget.countryCode,
+      );
 
-    if (!mounted) return;
+      if (!mounted) return;
 
-    setState(() {
-      _isLoading = false;
-    });
+      setState(() {
+        _isLoading = false;
+      });
 
-    widget.onVerificationSuccess();
-  }
-
-  void _fillSampleOtp() {
-    const sample = '123456';
-    for (int i = 0; i < _otpLength; i++) {
-      _controllers[i].text = sample[i];
+      if (res.success) {
+        widget.onVerificationSuccess();
+      } else {
+        setState(() {
+          _errorMessage = res.message.isNotEmpty
+              ? res.message
+              : 'Invalid verification code. Please try again.';
+        });
+      }
+    } catch (e) {
+      if (!mounted) return;
+      setState(() {
+        _isLoading = false;
+        _errorMessage = 'Verification error: ${e.toString()}';
+      });
     }
-    setState(() {
-      _errorMessage = null;
-    });
-    _verifyOtp();
   }
+
 
   @override
   Widget build(BuildContext context) {
@@ -287,15 +298,12 @@ class _OtpVerificationViewState extends State<OtpVerificationView> {
         Row(
           mainAxisAlignment: MainAxisAlignment.spaceBetween,
           children: [
-            InkWell(
-              onTap: _fillSampleOtp,
-              child: const Text(
-                'Auto-fill Demo (123456)',
-                style: TextStyle(
-                  fontSize: 13,
-                  fontWeight: FontWeight.w600,
-                  color: Color(0xFFD4AF37),
-                ),
+            const Text(
+              "Didn't receive code?",
+              style: TextStyle(
+                fontSize: 13,
+                fontWeight: FontWeight.w500,
+                color: Color(0xFF64748B),
               ),
             ),
             _resendCountdown > 0
@@ -304,18 +312,24 @@ class _OtpVerificationViewState extends State<OtpVerificationView> {
                     style: const TextStyle(
                       fontSize: 13,
                       color: Color(0xFF64748B),
-                      fontWeight: FontWeight.w500,
+                      fontWeight: FontWeight.w600,
                     ),
                   )
                 : InkWell(
-                    onTap: () {
+                    onTap: () async {
                       _startCountdown();
-                      ScaffoldMessenger.of(context).showSnackBar(
-                        const SnackBar(
-                          content: Text('A new OTP has been sent!'),
-                          duration: Duration(seconds: 2),
-                        ),
+                      await GoldenApiService.instance.sendOtp(
+                        widget.phoneNumber,
+                        countryCode: widget.countryCode,
                       );
+                      if (context.mounted) {
+                        ScaffoldMessenger.of(context).showSnackBar(
+                          SnackBar(
+                            content: Text('A new OTP has been sent to ${widget.countryCode} ${widget.phoneNumber}!'),
+                            duration: const Duration(seconds: 2),
+                          ),
+                        );
+                      }
                     },
                     child: const Text(
                       'Resend OTP',

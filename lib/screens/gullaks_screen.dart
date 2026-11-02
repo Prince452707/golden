@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
+import 'home_screen.dart';
 import '../widgets/home/home_arch_painters.dart';
 import '../widgets/gullak/gullak_models.dart';
 import '../widgets/gullak/gullak_card.dart';
@@ -13,6 +14,8 @@ import 'gullak_goals_screen.dart';
 import 'buy_screen.dart';
 import 'live_rates_screen.dart';
 import 'profile_screen.dart';
+import '../services/golden_api_service.dart';
+import '../core/models/gullak_models.dart';
 
 class GullaksScreen extends StatefulWidget {
   final String userName;
@@ -20,7 +23,7 @@ class GullaksScreen extends StatefulWidget {
 
   const GullaksScreen({
     super.key,
-    this.userName = 'Prince Kumar',
+    this.userName = 'Golden Member',
     this.phoneNumber,
   });
 
@@ -29,7 +32,20 @@ class GullaksScreen extends StatefulWidget {
 }
 
 class _GullaksScreenState extends State<GullaksScreen> {
-  int _selectedBottomNavIndex = 1;
+  UserGoalsData? _goalsData;
+
+  @override
+  void initState() {
+    super.initState();
+    _fetchUserGoals();
+  }
+
+  void _fetchUserGoals() async {
+    final res = await GoldenApiService.instance.getUserGoals();
+    if (mounted && res.data != null) {
+      setState(() => _goalsData = res.data);
+    }
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -39,7 +55,19 @@ class _GullaksScreenState extends State<GullaksScreen> {
         statusBarIconBrightness: Brightness.dark,
         statusBarBrightness: Brightness.light,
       ),
-      child: Scaffold(
+      child: PopScope(
+        canPop: false,
+        onPopInvokedWithResult: (didPop, _) {
+          if (!didPop) {
+            Navigator.of(context).pushReplacement(
+              PageRouteBuilder(
+                pageBuilder: (_, __, ___) => const HomeScreen(),
+                transitionDuration: Duration.zero,
+              ),
+            );
+          }
+        },
+        child: Scaffold(
         backgroundColor: Colors.white,
         body: Column(
           children: [
@@ -99,23 +127,56 @@ class _GullaksScreenState extends State<GullaksScreen> {
                           ),
                           const SizedBox(height: 12),
 
-                          // Active Saving Card (Daily Saving ₹0)
-                          GullakActiveCard(
-                            onCompleteSetup: () {
-                              _openGoalSetup(
-                                context,
-                                GullakGoal.allGoals[1], // Gold Savings
-                              );
-                            },
-                            onOptionsTap: () {
-                              ScaffoldMessenger.of(context).showSnackBar(
-                                const SnackBar(
-                                  content: Text('Daily Saving Settings: Active & Running'),
-                                  duration: Duration(seconds: 1),
+                          // Active Saving Card
+                          if (_goalsData != null && _goalsData!.goals.isNotEmpty)
+                            GullakActiveCard(
+                              goal: _goalsData!.goals.first,
+                              onCompleteSetup: () {
+                                _openGoalSetup(
+                                  context,
+                                  GullakGoal.allGoals[1], // Gold Savings
+                                );
+                              },
+                              onOptionsTap: () async {
+                                final goalId = _goalsData!.goals.first.id;
+                                final res = await GoldenApiService.instance.depositToGoal(
+                                  goalId,
+                                  1000,
+                                );
+                                if (context.mounted) {
+                                  ScaffoldMessenger.of(context).showSnackBar(
+                                    SnackBar(
+                                      content: Text(res.message.isNotEmpty
+                                          ? res.message
+                                          : 'Deposit successful!'),
+                                      backgroundColor: const Color(0xFF005953),
+                                      duration: const Duration(seconds: 3),
+                                    ),
+                                  );
+                                }
+                              },
+                            )
+                          else
+                            Container(
+                              width: double.infinity,
+                              padding: const EdgeInsets.symmetric(vertical: 24, horizontal: 16),
+                              decoration: BoxDecoration(
+                                color: const Color(0xFFF8FAFC),
+                                borderRadius: BorderRadius.circular(16),
+                                border: Border.all(color: const Color(0xFFE2E8F0)),
+                              ),
+                              child: const Center(
+                                child: Text(
+                                  'No active savings goal yet. Set up a goal above to start auto-saving in 24K Gold!',
+                                  textAlign: TextAlign.center,
+                                  style: TextStyle(
+                                    fontSize: 13,
+                                    fontWeight: FontWeight.w500,
+                                    color: Color(0xFF64748B),
+                                  ),
                                 ),
-                              );
-                            },
-                          ),
+                              ),
+                            ),
 
                           const SizedBox(height: 24),
 
@@ -156,19 +217,15 @@ class _GullaksScreenState extends State<GullaksScreen> {
             ),
 
             // Bottom Navigation Bar (Home, Gullaks [active], Dashboard, Profile)
-            GullakBottomNav(
-              selectedIndex: _selectedBottomNavIndex,
-              onTabSelected: (index) {
-                setState(() {
-                  _selectedBottomNavIndex = index;
-                });
-              },
+            const GullakBottomNav(
+              selectedIndex: 1,
             ),
           ],
         ),
       ),
-    );
-  }
+    ),
+  );
+}
 
   /// Warm golden glowing header matching the exact replica
   Widget _buildGoldenHeader(BuildContext context) {
@@ -290,7 +347,7 @@ class _GullaksScreenState extends State<GullaksScreen> {
               MaterialPageRoute(
                 builder: (_) => ProfileScreen(
                   userName: widget.userName,
-                  phoneNumber: widget.phoneNumber ?? '+91 98765 43210',
+                  phoneNumber: widget.phoneNumber ?? '',
                 ),
               ),
             );
@@ -326,7 +383,7 @@ class _GullaksScreenState extends State<GullaksScreen> {
 
         const Spacer(),
 
-        // Live Rate Chip: ((•)) 14,139.83/gm
+   
         InkWell(
           onTap: () {
             Navigator.of(context).push(

@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
+import '../services/golden_api_service.dart';
 
 class GiftBullionScreen extends StatefulWidget {
   final bool initialIsGold;
@@ -102,7 +103,7 @@ class _GiftBullionScreenState extends State<GiftBullionScreen> {
     super.initState();
     _isGold = widget.initialIsGold;
     _nameController = TextEditingController(text: 'Ananya Sharma');
-    _phoneController = TextEditingController(text: '9876543210');
+    _phoneController = TextEditingController();
     _amountController = TextEditingController(text: '1001');
     _messageController = TextEditingController(text: _occasions[0].defaultMessage);
   }
@@ -560,8 +561,8 @@ class _GiftBullionScreenState extends State<GiftBullionScreen> {
                         ),
                         Column(
                           crossAxisAlignment: CrossAxisAlignment.end,
-                          children: const [
-                            Text(
+                          children: [
+                            const Text(
                               'SENT WITH LOVE BY',
                               style: TextStyle(
                                 fontSize: 9,
@@ -570,10 +571,10 @@ class _GiftBullionScreenState extends State<GiftBullionScreen> {
                                 letterSpacing: 0.5,
                               ),
                             ),
-                            SizedBox(height: 1),
+                            const SizedBox(height: 1),
                             Text(
-                              'Prince Kumar',
-                              style: TextStyle(
+                              GoldenApiService.instance.currentUser?.fullName ?? 'Golden Member',
+                              style: const TextStyle(
                                 fontSize: 13,
                                 fontWeight: FontWeight.w800,
                                 color: Color(0xFF0F172A),
@@ -614,7 +615,7 @@ class _GiftBullionScreenState extends State<GiftBullionScreen> {
             scrollDirection: Axis.horizontal,
             physics: const BouncingScrollPhysics(),
             itemCount: _occasions.length,
-            separatorBuilder: (_, __) => const SizedBox(width: 8),
+            separatorBuilder: (context, index) => const SizedBox(width: 8),
             itemBuilder: (context, idx) {
               final item = _occasions[idx];
               final isSelected = _selectedOccasionIndex == idx;

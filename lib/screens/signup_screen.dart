@@ -1,9 +1,11 @@
 import 'package:flutter/material.dart';
 import 'home_screen.dart';
+import 'profile/complete_profile_screen.dart';
 import '../widgets/hero_video_widget.dart';
 import '../widgets/phone_input_card.dart';
 import '../widgets/otp_verification_view.dart';
-import '../widgets/country_picker_modal.dart';
+import 'package:country_code_picker/country_code_picker.dart';
+import '../services/golden_api_service.dart';
 
 class SignupScreen extends StatefulWidget {
   const SignupScreen({super.key});
@@ -18,14 +20,21 @@ class _SignupScreenState extends State<SignupScreen> {
   String _enteredPhone = '';
   String _selectedCountryCode = '+91';
 
-  void _onPhoneSubmit(Country country, String phone) async {
+  void _onPhoneSubmit(CountryCode country, String phone) async {
+    // Clear any previous session so the new phone number starts completely fresh
+    GoldenApiService.instance.currentUser = null;
+
+    final dialCode = country.dialCode ?? '+91';
     setState(() {
       _isSubmitting = true;
-      _selectedCountryCode = country.code;
+      _selectedCountryCode = dialCode;
       _enteredPhone = phone;
     });
 
-    await Future.delayed(const Duration(milliseconds: 650));
+    final res = await GoldenApiService.instance.sendOtp(
+      phone,
+      countryCode: dialCode,
+    );
 
     if (!mounted) return;
 
@@ -36,7 +45,9 @@ class _SignupScreenState extends State<SignupScreen> {
 
     ScaffoldMessenger.of(context).showSnackBar(
       SnackBar(
-        content: Text('Verification code sent to ${country.code} $phone'),
+        content: Text(res.message.isNotEmpty
+            ? res.message
+            : 'Verification code sent to $dialCode $phone'),
         behavior: SnackBarBehavior.floating,
         shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
         backgroundColor: const Color(0xFF00AAA1),
@@ -44,16 +55,40 @@ class _SignupScreenState extends State<SignupScreen> {
       ),
     );
   }
+
   void _onVerificationSuccess() {
-    Navigator.pushReplacement(
-      context,
-      MaterialPageRoute(
-        builder: (_) => HomeScreen(
-          userName: 'Prince Kumar',
-          phoneNumber: '$_selectedCountryCode $_enteredPhone',
+    final user = GoldenApiService.instance.currentUser;
+    final cleanEntered = _enteredPhone.replaceAll(' ', '');
+    final cleanUserPhone = (user?.phoneNumber ?? '').replaceAll(' ', '');
+    final phoneMatches = cleanUserPhone.isNotEmpty && cleanUserPhone == cleanEntered;
+
+ 
+    final needsProfileSetup = user == null ||
+        user.isNewUser ||
+        user.needsFirstTimeProfileSetup ||
+        (!phoneMatches && cleanEntered.isNotEmpty);
+
+    if (needsProfileSetup) {
+      Navigator.pushReplacement(
+        context,
+        MaterialPageRoute(
+          builder: (_) => CompleteProfileScreen(
+            phoneNumber: _enteredPhone,
+            countryCode: _selectedCountryCode,
+          ),
         ),
-      ),
-    );
+      );
+    } else {
+      Navigator.pushReplacement(
+        context,
+        MaterialPageRoute(
+          builder: (_) => HomeScreen(
+            userName: user.fullName,
+            phoneNumber: '${user.countryCode} ${user.phoneNumber}',
+          ),
+        ),
+      );
+    }
   }
 
   @override

@@ -173,7 +173,7 @@ class _DiscoverScreenState extends State<DiscoverScreen> {
                 scrollDirection: Axis.horizontal,
                 physics: const BouncingScrollPhysics(),
                 itemCount: _categories.length,
-                separatorBuilder: (_, __) => const SizedBox(width: 8),
+                separatorBuilder: (context, index) => const SizedBox(width: 8),
                 itemBuilder: (context, idx) {
                   final cat = _categories[idx];
                   final isSelected = _selectedCategory == cat;
@@ -238,7 +238,7 @@ class _DiscoverScreenState extends State<DiscoverScreen> {
               shrinkWrap: true,
               physics: const NeverScrollableScrollPhysics(),
               itemCount: filtered.length,
-              separatorBuilder: (_, __) => const SizedBox(height: 12),
+              separatorBuilder: (context, index) => const SizedBox(height: 12),
               itemBuilder: (context, index) {
                 final article = filtered[index];
                 return _buildArticleListItem(context, article);
@@ -479,17 +479,17 @@ class DiscoverDetailScreen extends StatelessWidget {
         ),
         centerTitle: false,
         actions: [
-          IconButton(
-            icon: const Icon(Icons.share_outlined, size: 20, color: Color(0xFF475569)),
-            onPressed: () {
-              ScaffoldMessenger.of(context).showSnackBar(
-                const SnackBar(
-                  content: Text('Article link copied to clipboard!'),
-                  duration: Duration(seconds: 2),
-                ),
-              );
-            },
-          ),
+          // IconButton(
+          //   icon: const Icon(Icons.share_outlined, size: 20, color: Color(0xFF475569)),
+          //   onPressed: () {
+          //     ScaffoldMessenger.of(context).showSnackBar(
+          //       const SnackBar(
+          //         content: Text('Article link copied to clipboard!'),
+          //         duration: Duration(seconds: 2),
+          //       ),
+          //     );
+          //   },
+          // ),
         ],
       ),
       body: Column(
