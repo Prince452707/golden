@@ -1,10 +1,8 @@
-/// Golden Digital Precious Metals Platform - Global API Configuration
-/// Single Source of Truth for Platform Networking
-class ApiConfig {
-  /// Active ngrok API Base URL
-  static const String baseUrl =
-      'https://unbent-smashing-negation.ngrok-free.dev/api/v1';
 
+class ApiConfig {
+  /// Active Server API Base URL
+  static const String baseUrl = 'http://129.121.133.31:5000/api/v1';
+ //'https://unbent-smashing-negation.ngrok-free.dev/api/v1';
   /// Connection and Read Timeout
   static const Duration timeout = Duration(seconds: 15);
 
